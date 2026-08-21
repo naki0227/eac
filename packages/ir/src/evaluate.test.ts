@@ -91,3 +91,32 @@ describe("evaluateTimedProperty", () => {
     });
   });
 });
+
+describe("degenerate motion durations", () => {
+  const property = {
+    kind: "timed" as const,
+    initial: deg(0),
+    segments: [{ id: "a", start: sec(1), duration: sec(0), target: deg(90) }],
+  };
+
+  it("steps instantly instead of producing NaN for a zero-duration segment", () => {
+    expect(evaluateTimedProperty(property, 0.5).value).toBe(0);
+    expect(evaluateTimedProperty(property, 1).value).toBe(90);
+    expect(evaluateTimedProperty(property, 2).value).toBe(90);
+  });
+
+  it("evaluates unsorted hand-authored segments in time order", () => {
+    const unsorted = {
+      kind: "timed" as const,
+      initial: deg(0),
+      segments: [
+        { id: "late", start: sec(2), duration: sec(1), target: deg(180) },
+        { id: "early", start: sec(0), duration: sec(1), target: deg(90) },
+      ],
+    };
+
+    expect(evaluateTimedProperty(unsorted, 0.5).value).toBe(45);
+    expect(evaluateTimedProperty(unsorted, 1.5).value).toBe(90);
+    expect(evaluateTimedProperty(unsorted, 2.5).value).toBe(135);
+  });
+});

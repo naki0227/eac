@@ -51,21 +51,37 @@ function interpolate<T extends PropertyValue>(
   return lerpUnit(from as UnitValue<"angle">, to as UnitValue<"angle">, progress) as T;
 }
 
+const isTimeOrdered = <T extends PropertyValue>(segments: readonly MotionSegment<T>[]): boolean =>
+  segments.every(
+    (segment, index) =>
+      index === 0 || (segments[index - 1]?.start.value ?? 0) <= segment.start.value,
+  );
+
+/**
+ * Segments produced by `build()` are already time-ordered, so normalized IR is never re-sorted
+ * per frame. Hand-authored IR is sorted once here as a fallback.
+ */
+const orderedSegments = <T extends PropertyValue>(
+  segments: readonly MotionSegment<T>[],
+): readonly MotionSegment<T>[] =>
+  isTimeOrdered(segments) ? segments : [...segments].sort((a, b) => a.start.value - b.start.value);
+
 export function evaluateTimedProperty<T extends PropertyValue>(
   property: TimedProperty<T>,
   time: number,
 ): T {
   let current = property.initial;
-  const segments = [...property.segments].sort((a, b) => a.start.value - b.start.value);
-  for (const segment of segments) {
+  for (const segment of orderedSegments(property.segments)) {
     if (time < segment.start.value) break;
     const from = segment.from ?? current;
     const end = segment.start.value + segment.duration.value;
     if (time <= end) {
-      const progress = Math.max(
-        0,
-        Math.min(1, (time - segment.start.value) / segment.duration.value),
-      );
+      // A non-positive duration is rejected by the checker; evaluation still steps to the target
+      // instantly so no consumer can observe a NaN progress value.
+      const progress =
+        segment.duration.value > 0
+          ? Math.max(0, Math.min(1, (time - segment.start.value) / segment.duration.value))
+          : 1;
       return interpolate(
         from,
         segment.target,

@@ -262,3 +262,24 @@ describe("checker", () => {
     expect(ids(project)).toContain("eac::timeline::invalid-range");
   });
 });
+
+describe("degenerate timelines", () => {
+  it("reports a zero-duration motion instead of throwing during sampling", () => {
+    const project = experience({
+      name: "zero",
+      width: px(100),
+      height: px(100),
+      duration: sec(2),
+    });
+    project
+      .scene("main")
+      .circle("dot", { position: { x: px(10), y: px(10) }, radius: px(5), fill: "#ffffff" })
+      .moveTo({ x: px(90), y: px(90) }, { at: sec(1), duration: sec(0) });
+
+    const result = checkExperience(project.build());
+
+    expect(result.diagnostics.map(({ id }) => id)).toContain("eac::timeline::invalid-range");
+    expect(result.stats.frames).toBeGreaterThan(0);
+    expect(result.stats.invalidTransforms).toBe(0);
+  });
+});
