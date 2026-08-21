@@ -1,11 +1,19 @@
 import { readJson, listJsonFiles } from "./fs.js";
-import { resultsRoot } from "./config.js";
+import { auditedResultsRoot, resultsRoot } from "./config.js";
 import { summarize, validateResult } from "./result.js";
 import type { BenchmarkResult } from "./types.js";
+import { basename } from "node:path";
 
-export async function analyzeResults(): Promise<string> {
+export async function analyzeResults(audited = false): Promise<string> {
   const results: BenchmarkResult[] = [];
-  for (const path of await listJsonFiles(resultsRoot)) {
+  const paths = await listJsonFiles(audited ? auditedResultsRoot : resultsRoot);
+  if (audited) {
+    const rawNames = (await listJsonFiles(resultsRoot)).map((path) => basename(path));
+    const auditedNames = paths.map((path) => basename(path));
+    if (JSON.stringify(rawNames) !== JSON.stringify(auditedNames))
+      throw new Error("Audited analysis requires one audited result for every raw result.");
+  }
+  for (const path of paths) {
     const value = await readJson(path);
     validateResult(value);
     results.push(value);
@@ -14,6 +22,7 @@ export async function analyzeResults(): Promise<string> {
   return `${JSON.stringify(
     {
       runs: results.length,
+      authority: audited ? "human-audited" : "raw",
       byCondition: summary,
       comparisons: {
         "A-vs-B": { from: summary[0], to: summary[1] },

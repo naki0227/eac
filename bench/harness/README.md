@@ -76,6 +76,20 @@ tests command availability, hidden-path absence, result and cross-run isolation,
 GitHub egress denial, evaluator separation, fixture diagnostics, Codex version, and image revision.
 The host-only smoke marker is valid only for the commit it tested.
 
+## Real authentication transport preflight
+
+After the final harness commit is clean and before creating the freeze tag, run exactly once:
+
+```bash
+pnpm bench:preflight-auth
+```
+
+This starts a separate Condition-A agent container with an empty workspace and a `/materials`
+directory containing only `task.txt`. The prompt is exactly `Reply exactly: BENCH_AUTH_OK`. It does
+not mount or copy the EaC README, declarations, CLI, fixtures, tasks, repository, or results. Success
+requires an exact structured Codex response, no denied proxy destination, and a marker bound to the
+current commit. `run` and `run-all` reject a missing or stale preflight marker.
+
 ## Freeze workflow
 
 After implementation, fixtures, local validation, and CI are final:
@@ -86,12 +100,53 @@ pnpm bench:smoke
 ```
 
 `run` and `run-all` refuse a missing tag, a checkout that differs from the tag, a dirty tree, stale
-prepared hashes, or a smoke marker from another commit. The evaluator and agent images carry the
-same commit in their OCI revision label.
+prepared hashes, a smoke marker from another commit, or a missing/stale real-auth preflight marker.
+The evaluator and agent images carry the same commit in their OCI revision label.
 
 Benchmark-affecting inputs include README/API declarations, help/guide/docs, checker behavior,
 tasks, metrics, fixtures, generated materials, condition packaging, and the Docker/harness policy.
 Changing any of them after tagging invalidates the experiment and requires a new tag/version.
+
+## Human metric audit
+
+Raw benchmark records deliberately leave these fields unaudited:
+
+- `hallucinated_api_calls`;
+- `invalid_api_values`;
+- `repair_iterations`;
+- `check_driven_repair_success`.
+
+Their definitions remain frozen in `bench/metrics.md`; only their observation procedure is manual.
+For each run, create a hash-bound audit template:
+
+```bash
+pnpm bench:audit <run-id>
+```
+
+The command preserves an existing template and prints the evidence paths. Review `agent.jsonl`,
+`cli-events.json`, `undefined-api-candidates.json`, the final source, and evaluation. Then fill the
+four metric values, `auditor`, canonical `audited_at`, and at least one concrete `evidence_notes`
+entry. Apply it with:
+
+```bash
+pnpm bench:audit <run-id> --apply
+```
+
+Apply verifies the immutable raw-result SHA-256 and writes a separate
+`.bench-private/audited-results/<run-id>.json`; it never edits raw results. Count every actual call to
+an undefined EaC API, and separately count invalid names or shapes passed to real APIs. For
+`repair_iterations`, identify the first task-complete candidate from transcript and CLI-event
+evidence, then count candidate edits followed by checks after it. Do not derive it from
+`check_calls - 1`; exclude incomplete preflight checks. Set `check_driven_repair_success` true only
+when a recorded checker diagnostic caused a later candidate to remove that finding.
+
+After all runs have matching audited results:
+
+```bash
+pnpm bench:analyze --audited
+```
+
+Audited analysis refuses partial coverage and keeps raw records authoritative evidence.
 
 ## Run one task
 
@@ -128,9 +183,8 @@ pnpm bench:analyze
 ```
 
 Analysis emits deterministic descriptive totals by condition and A→B/B→C data structures. It makes
-no significance or causal claims. Raw JSON remains authoritative. Metrics that cannot be observed
-reliably are `null` with notes; undefined-API candidates are preserved for human audit rather than
-silently counted.
+no significance or causal claims. Raw JSON remains authoritative. The four manually observed
+metrics remain `null` in raw records and are populated only in separately audited results.
 
 ## Known limitations
 

@@ -17,6 +17,11 @@ its own workspace mounted. Keep documentation/check execution in a separate capa
 enforces command policy. Perform final validation in a detached, networkless evaluator. Stage all
 results under ignored host-only storage until the experiment finishes.
 
+Metrics that require semantic interpretation use an immutable two-stage record: raw result and
+evidence first, then a hash-bound human audit that produces a separate audited result. The raw record
+is never rewritten. A real-auth transport preflight with no EaC materials is required for the frozen
+commit before benchmark execution.
+
 Real agents use an internal Docker network and a CONNECT proxy restricted to the required OpenAI
 service hosts. The agent runner prefers a narrowly mounted, file-based ChatGPT authentication cache;
 the entrypoint copies that cache into per-run tmpfs and never mounts the rest of the host Codex
@@ -38,6 +43,7 @@ explicit Codex CLI version, while all images carry the frozen repository revisio
 - Enforces filesystem, command, evaluator-output, and cross-run boundaries.
 - Keeps condition policy small and auditable.
 - Supports deterministic preparation, order, resumption, and raw result retention.
+- Makes manual metric judgments attributable and detects stale audits through raw-byte hashes.
 - Avoids host repository/config-directory mounts and committed secrets.
 
 ## Costs and risks
@@ -48,6 +54,7 @@ explicit Codex CLI version, while all images carry the frozen repository revisio
   host administrators remain able to inspect it while a run exists.
 - A malicious Docker host administrator remains outside the threat model.
 - Some transcript-derived metrics still require human audit.
+- The real-auth preflight consumes one minimal Codex turn outside the benchmark task set.
 
 ## Revisit when
 
