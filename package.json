@@ -18,6 +18,7 @@
     "bench:run": "pnpm build && node bench/harness/dist/src/cli.js run",
     "bench:run-all": "pnpm build && node bench/harness/dist/src/cli.js run-all",
     "bench:analyze": "pnpm build && node bench/harness/dist/src/cli.js analyze",
+    "bench:verify-public": "node scripts/verify-public-benchmark.mjs",
     "clean": "tsc -b --clean",
     "eac": "node packages/cli/dist/bin.js",
     "typecheck": "tsc -b --pretty false",
@@ -26,7 +27,7 @@
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "validate": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "validate": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm bench:verify-public"
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",

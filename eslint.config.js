@@ -7,6 +7,7 @@ export default tseslint.config(
       "**/dist/**",
       "**/coverage/**",
       "**/frames/**",
+      ".bench-private/**",
       "bench/generated/**",
       "eslint.config.js",
       "vitest.config.js",
