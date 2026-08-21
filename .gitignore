@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+frames/
+*.mp4
+*.png
+.DS_Store
+docs/spec/
+docs/TODO.md

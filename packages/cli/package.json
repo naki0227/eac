@@ -1,0 +1,31 @@
+{
+  "name": "@eac/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "eac": "./dist/bin.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@eac/checker": "workspace:*",
+    "@eac/core": "workspace:*",
+    "@eac/ir": "workspace:*",
+    "@eac/renderer-svg": "workspace:*",
+    "prettier": "^3.6.2"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run",
+    "eac": "node dist/bin.js"
+  }
+}
