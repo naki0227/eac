@@ -1,0 +1,8 @@
+{
+  "name": "@eac/example-audio-sting",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@eac/core": "workspace:*"
+  }
+}

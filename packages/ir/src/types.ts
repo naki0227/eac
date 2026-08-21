@@ -133,6 +133,31 @@ export type InvalidAssetIR = Readonly<{
   detail: string;
 }>;
 export type AssetIR = LocalAssetIR | EmbeddedAssetIR | InvalidAssetIR;
+export type EmbeddedAudioAssetIR = Readonly<{
+  kind: "embedded-audio";
+  path: string;
+  mimeType: "audio/wav";
+  data: string;
+  duration: Time;
+}>;
+export type InvalidAudioAssetIR = Readonly<{
+  kind: "invalid-audio";
+  path: string;
+  reason: "missing" | "unsupported-format" | "invalid-reference";
+  detail: string;
+}>;
+export type AudioAssetIR = LocalAssetIR | EmbeddedAudioAssetIR | InvalidAudioAssetIR;
+export type AudioClipIR = Readonly<{
+  id: string;
+  asset: AudioAssetIR;
+  start: Time;
+  duration?: Time;
+  trimStart: Time;
+  trimEnd?: Time;
+  volume: number;
+  fadeIn: Time;
+  fadeOut: Time;
+}>;
 export type ImageGeometry = Readonly<{
   kind: "image";
   asset: AssetIR;
@@ -195,6 +220,7 @@ export type SceneIR = Readonly<{
   start: Time;
   duration: Time;
   nodes: readonly NodeIR[];
+  audioClips: readonly AudioClipIR[];
 }>;
 
 export type ExperienceIR = Readonly<{

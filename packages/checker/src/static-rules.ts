@@ -8,6 +8,7 @@ import {
   type PropertyValue,
 } from "@eac/ir";
 import { error, type Diagnostic } from "./diagnostic.js";
+import { runAudioRules } from "./audio-rules.js";
 import { conflictTimeline } from "./timeline-visualization.js";
 import { runValueRules } from "./value-rules.js";
 
@@ -209,6 +210,7 @@ export function runStaticRules(experience: ExperienceIR): Diagnostic[] {
     ...hierarchy(experience),
     ...timeline(experience),
     ...runValueRules(experience),
+    ...runAudioRules(experience),
     ...unsupported(experience),
     ...conflicts(experience),
     ...cycles(experience),

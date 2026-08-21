@@ -28,6 +28,7 @@ const categories: Readonly<Record<ApiCategory, ReadonlySet<string>>> = {
   Trajectory: new Set(["trajectory", "bezier", "cycloid", "ellipse", "orbit", "spiral", "wave"]),
   Styling: new Set(["color", "styling", "colorTo", "strokeColorTo", "blurTo"]),
   Assets: new Set(["asset", "image"]),
+  Audio: new Set(["audio"]),
   Units: new Set(["units"]),
   Validation: new Set(["inspect", "check", "preview"]),
 };

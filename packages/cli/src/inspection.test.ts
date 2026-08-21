@@ -21,6 +21,12 @@ describe("experience inspection", () => {
         height: px(40),
       })
       .fadeTo(opacity(0.5), { at: sec(0.5), duration: sec(0.25) });
+    project.scene("sound", { at: sec(0.5), duration: sec(1) }).audio("assets/sting.wav", {
+      id: "sting",
+      at: sec(0.25),
+      duration: sec(0.5),
+      volume: 0.75,
+    });
 
     const ir = project.build();
     const inspection = inspectExperience(ir, checkExperience(ir));
@@ -32,6 +38,7 @@ describe("experience inspection", () => {
       images: 1,
       writers: 1,
       maxDepth: 2,
+      audioClips: 1,
     });
     expect(inspection.scenes[0]?.nodes[0]?.children[0]?.writers[0]).toMatchObject({
       property: "main.hero.logo.opacity",
@@ -40,7 +47,16 @@ describe("experience inspection", () => {
     });
     expect(inspection.assets).toEqual([
       { node: "main.hero.logo", path: "assets/logo.svg", status: "local" },
+      { node: "sound.audio.sting", path: "assets/sting.wav", status: "local" },
     ]);
+    expect(inspection.audioClips[0]).toMatchObject({
+      id: "sting",
+      scene: "sound",
+      start: 0.25,
+      end: 0.75,
+      volume: 0.75,
+    });
     expect(formatInspection(inspection)).toContain("└─ Image logo [z=0]");
+    expect(formatInspection(inspection)).toContain("sound.audio.sting");
   });
 });

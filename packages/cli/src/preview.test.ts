@@ -16,6 +16,7 @@ describe("preview document", () => {
       fontSize: px(12),
       fill: "white",
     });
+    project.scene("sound").audio("assets/sting.wav", { at: sec(0.25), duration: sec(0.5) });
 
     const html = previewDocument(project.build());
 
@@ -24,6 +25,7 @@ describe("preview document", () => {
     expect(html).toContain('id="speed"');
     expect(html).toContain("0.000s / 1.000s");
     expect(html).toContain("ArrowLeft");
+    expect(html).toContain("HTML preview is silent; audio is muxed during MP4 render.");
     expect(html).not.toContain('<script id="unsafe">');
     expect(html).not.toContain('const frames=["<');
   });

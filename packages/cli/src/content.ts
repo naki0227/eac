@@ -59,6 +59,10 @@ Phase 5 — Validate
 - Read the full diagnostic
 - Fix the cause, not only the symptom
 
+Optional Audio
+- Use frozen project-relative WAV assets
+- HTML preview is silent; eac render muxes checked audio into MP4
+
 Phase 6 — Preview
 - Preview before rendering
 - Seek, step frames, and change playback speed without changing the experience

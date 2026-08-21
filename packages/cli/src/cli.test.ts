@@ -25,6 +25,7 @@ describe("agent-facing CLI", () => {
     expect(searchDocs("stagger several items")[0]?.name).toBe("stagger");
     expect(searchDocs("animate sRGB fill")[0]?.name).toBe("color");
     expect(searchDocs("cover a local PNG")[0]?.name).toBe("image");
+    expect(searchDocs("audio trim fade sound clip")[0]?.name).toBe("audio");
   });
 
   it("returns an actionable error for an unknown API", async () => {
@@ -45,6 +46,7 @@ describe("agent-facing CLI", () => {
     const output = log.mock.calls.flat().join("\n");
     expect(output).toContain("Motion:\n  moveTo");
     expect(output).toContain("Assets:");
+    expect(output).toContain("Audio:");
     expect(output).toContain("Validation:");
   });
 
@@ -57,6 +59,31 @@ describe("agent-facing CLI", () => {
       expect(await runCli(["format", project])).toBe(0);
       expect(await readFile(project, "utf8")).toBe('export default { name: "demo" };\n');
       expect(log).toHaveBeenCalledWith(expect.stringContaining("Formatted"));
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("honors the project prettier configuration in format and check", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "eac-cli-config-"));
+    const project = join(directory, "eac.config.mjs");
+    const wide =
+      'import { experience, px, sec } from "@eac/core";\n' +
+      'const project = experience({ name: "wide", width: px(10), height: px(10), duration: sec(1) });\n' +
+      "export default project;\n";
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    try {
+      await writeFile(join(directory, ".prettierrc.json"), '{ "printWidth": 100 }\n');
+      await writeFile(project, wide);
+      expect(await runCli(["format", project])).toBe(0);
+      expect(await readFile(project, "utf8")).toBe(wide);
+      expect(
+        await runCli([
+          "check",
+          "--ci",
+          join(import.meta.dirname, "../../../examples/audio-sting/eac.config.mjs"),
+        ]),
+      ).toBe(0);
     } finally {
       await rm(directory, { recursive: true, force: true });
     }

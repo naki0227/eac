@@ -1,6 +1,16 @@
 import { readFile, realpath } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
-import type { AssetIR, EmbeddedAssetIR, ExperienceIR, InvalidAssetIR, NodeIR } from "@eac/ir";
+import type {
+  AssetIR,
+  AudioAssetIR,
+  AudioClipIR,
+  EmbeddedAssetIR,
+  ExperienceIR,
+  InvalidAssetIR,
+  InvalidAudioAssetIR,
+  NodeIR,
+} from "@eac/ir";
+import { sec } from "@eac/core";
 
 const MAX_ASSET_BYTES = 20 * 1024 * 1024;
 
@@ -9,6 +19,12 @@ const invalid = (
   reason: InvalidAssetIR["reason"],
   detail: string,
 ): InvalidAssetIR => ({ kind: "invalid", path, reason, detail });
+
+const invalidAudio = (
+  path: string,
+  reason: InvalidAudioAssetIR["reason"],
+  detail: string,
+): InvalidAudioAssetIR => ({ kind: "invalid-audio", path, reason, detail });
 
 function pngDimensions(data: Buffer): readonly [number, number] | undefined {
   const signature = "89504e470d0a1a0a";
@@ -79,6 +95,35 @@ function inspectImage(
   return undefined;
 }
 
+function wavDuration(data: Buffer): number | undefined {
+  if (
+    data.length < 44 ||
+    data.subarray(0, 4).toString("ascii") !== "RIFF" ||
+    data.subarray(8, 12).toString("ascii") !== "WAVE"
+  )
+    return undefined;
+  let offset = 12;
+  let byteRate: number | undefined;
+  let dataSize: number | undefined;
+  while (offset + 8 <= data.length) {
+    const id = data.subarray(offset, offset + 4).toString("ascii");
+    const size = data.readUInt32LE(offset + 4);
+    const start = offset + 8;
+    if (start + size > data.length) return undefined;
+    if (id === "fmt " && size >= 16) {
+      const format = data.readUInt16LE(start);
+      if (![1, 3].includes(format)) return undefined;
+      byteRate = data.readUInt32LE(start + 8);
+    }
+    if (id === "data") dataSize = size;
+    offset = start + size + (size % 2);
+  }
+  if (byteRate === undefined || dataSize === undefined || byteRate <= 0 || dataSize <= 0)
+    return undefined;
+  const duration = dataSize / byteRate;
+  return Number.isFinite(duration) && duration > 0 ? duration : undefined;
+}
+
 async function resolveAsset(asset: AssetIR, root: string): Promise<AssetIR> {
   if (asset.kind !== "local") return asset;
   const target = resolve(root, asset.path);
@@ -115,6 +160,41 @@ async function resolveAsset(asset: AssetIR, root: string): Promise<AssetIR> {
   return { kind: "embedded", path: asset.path, data: data.toString("base64"), ...inspected };
 }
 
+async function resolveAudioAsset(asset: AudioAssetIR, root: string): Promise<AudioAssetIR> {
+  if (asset.kind !== "local") return asset;
+  const target = resolve(root, asset.path);
+  const lexicalRelative = relative(root, target);
+  if (isAbsolute(lexicalRelative) || lexicalRelative.startsWith(".."))
+    return invalidAudio(asset.path, "invalid-reference", "audio path escapes the project root");
+  let canonicalTarget: string;
+  try {
+    canonicalTarget = await realpath(target);
+  } catch {
+    return invalidAudio(asset.path, "missing", "audio file does not exist or is unreadable");
+  }
+  const canonicalRoot = await realpath(root);
+  const canonicalRelative = relative(canonicalRoot, canonicalTarget);
+  if (isAbsolute(canonicalRelative) || canonicalRelative.startsWith(".."))
+    return invalidAudio(asset.path, "invalid-reference", "audio symlink escapes the project root");
+  const data = await readFile(canonicalTarget);
+  if (data.byteLength > MAX_ASSET_BYTES)
+    return invalidAudio(asset.path, "unsupported-format", "audio exceeds the 20 MiB safety limit");
+  const duration = wavDuration(data);
+  if (duration === undefined)
+    return invalidAudio(asset.path, "unsupported-format", "expected a valid PCM or float WAV file");
+  return {
+    kind: "embedded-audio",
+    path: asset.path,
+    mimeType: "audio/wav",
+    data: data.toString("base64"),
+    duration: sec(duration),
+  };
+}
+
+async function resolveAudioClip(clip: AudioClipIR, root: string): Promise<AudioClipIR> {
+  return { ...clip, asset: await resolveAudioAsset(clip.asset, root) };
+}
+
 async function resolveNode(node: NodeIR, root: string): Promise<NodeIR> {
   if (node.kind === "group")
     return {
@@ -138,6 +218,9 @@ export async function resolveProjectAssets(
       experience.scenes.map(async (scene) => ({
         ...scene,
         nodes: await Promise.all(scene.nodes.map((node) => resolveNode(node, projectRoot))),
+        audioClips: await Promise.all(
+          scene.audioClips.map((clip) => resolveAudioClip(clip, projectRoot)),
+        ),
       })),
     ),
   };

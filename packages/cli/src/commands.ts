@@ -17,15 +17,19 @@ const valueAfter = (args: readonly string[], flag: string): string | undefined =
 const projectArgument = (args: readonly string[]): string | undefined =>
   args.find((arg) => arg.endsWith(".mjs") || arg.endsWith(".json"));
 
+async function formatOptions(path: string): Promise<prettier.Options> {
+  return { ...(await prettier.resolveConfig(path)), filepath: path };
+}
+
 async function formatIsValid(path: string): Promise<boolean> {
   const source = await readFile(path, "utf8");
-  return prettier.check(source, { filepath: path });
+  return prettier.check(source, await formatOptions(path));
 }
 
 async function formatProject(args: readonly string[]): Promise<number> {
   const project = await findProject(projectArgument(args));
   const source = await readFile(project, "utf8");
-  const formatted = await prettier.format(source, { filepath: project });
+  const formatted = await prettier.format(source, await formatOptions(project));
   if (source !== formatted) await writeFile(project, formatted);
   console.log(`${source === formatted ? "Already formatted" : "Formatted"} ${project}`);
   return 0;
@@ -96,7 +100,7 @@ async function render(args: readonly string[]): Promise<number> {
   const temporary = await mkdtemp(join(tmpdir(), "eac-render-"));
   try {
     await renderPngSequence(experience, temporary);
-    await encodeMp4(temporary, experience.fps, output);
+    await encodeMp4(temporary, experience.fps, output, { experience });
   } finally {
     await rm(temporary, { recursive: true, force: true });
   }

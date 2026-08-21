@@ -30,6 +30,13 @@ export const v02Docs: readonly ApiDoc[] = [
     keywords: ["blur", "filter", "style", "animate", "soften"],
   },
   {
+    name: "audio",
+    summary: "Schedules a deterministic local WAV clip for full MP4 rendering.",
+    signature: "scene.audio(path, { id?, at?, duration?, trim?, volume?, fadeIn?, fadeOut? })",
+    example: 'scene.audio("assets/click.wav", { at: sec(1.2), volume: 0.8, fadeOut: sec(0.1) })',
+    keywords: ["audio", "sound", "wav", "clip", "trim", "volume", "fade", "mux"],
+  },
+  {
     name: "units",
     summary: "Creates explicit length, time, angle, opacity, and depth values.",
     signature:

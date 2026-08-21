@@ -1,4 +1,4 @@
-export { experience, ExperienceBuilder, SceneBuilder } from "./builders.js";
+export { experience, ExperienceBuilder, SceneBuilder, type AudioOptions } from "./builders.js";
 export { GroupBuilder } from "./group-builder.js";
 export { TransformBuilder } from "./transform-builder.js";
 export type { ImageStyle, ObjectStyle, TransformStyle } from "./node-factory.js";
@@ -20,6 +20,8 @@ export type { ColorInput } from "./color.js";
 export { deg, depth, ms, opacity, px, rad, sec } from "@eac/units";
 export type {
   AssetIR,
+  AudioAssetIR,
+  AudioClipIR,
   ColorIR,
   Easing,
   ExperienceIR,

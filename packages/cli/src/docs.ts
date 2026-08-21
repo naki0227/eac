@@ -16,6 +16,7 @@ export type ApiCategory =
   | "Trajectory"
   | "Styling"
   | "Assets"
+  | "Audio"
   | "Units"
   | "Validation";
 

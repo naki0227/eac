@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { experience, px, sec } from "@eac/core";
-import type { AssetIR, ExperienceIR } from "@eac/ir";
+import type { AssetIR, AudioAssetIR, ExperienceIR } from "@eac/ir";
 import { resolveProjectAssets } from "./assets.js";
 
 const directories: string[] = [];
@@ -35,6 +35,37 @@ function project(path: string): ExperienceIR {
     height: px(40),
   });
   return value.build();
+}
+
+function audioProject(path: string): ExperienceIR {
+  const value = experience({ name: "audio", width: px(100), height: px(100), duration: sec(2) });
+  value.scene("main").audio(path, { at: sec(0.5) });
+  return value.build();
+}
+
+function audioAsset(experienceIr: ExperienceIR): AudioAssetIR {
+  const value = experienceIr.scenes[0]?.audioClips[0]?.asset;
+  if (!value) throw new Error("Expected audio in test fixture.");
+  return value;
+}
+
+function oneSecondWav(): Buffer {
+  const samples = 8_000;
+  const dataSize = samples * 2;
+  const wav = Buffer.alloc(44 + dataSize);
+  wav.write("RIFF", 0);
+  wav.writeUInt32LE(36 + dataSize, 4);
+  wav.write("WAVEfmt ", 8);
+  wav.writeUInt32LE(16, 16);
+  wav.writeUInt16LE(1, 20);
+  wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(8_000, 24);
+  wav.writeUInt32LE(16_000, 28);
+  wav.writeUInt16LE(2, 32);
+  wav.writeUInt16LE(16, 34);
+  wav.write("data", 36);
+  wav.writeUInt32LE(dataSize, 40);
+  return wav;
 }
 
 describe("CLI asset resolution", () => {
@@ -122,6 +153,31 @@ describe("CLI asset resolution", () => {
 
     expect(imageAsset(await resolveProjectAssets(project("linked.svg"), root))).toEqual(
       expect.objectContaining({ kind: "invalid", reason: "invalid-reference" }),
+    );
+  });
+
+  it("embeds a valid frozen WAV with deterministic duration metadata", async () => {
+    const root = await temporary();
+    await writeFile(join(root, "sting.wav"), oneSecondWav());
+
+    expect(audioAsset(await resolveProjectAssets(audioProject("sting.wav"), root))).toEqual(
+      expect.objectContaining({
+        kind: "embedded-audio",
+        mimeType: "audio/wav",
+        duration: sec(1),
+      }),
+    );
+  });
+
+  it("classifies missing and unsupported audio assets", async () => {
+    const root = await temporary();
+    await writeFile(join(root, "noise.wav"), "not wav bytes");
+
+    expect(audioAsset(await resolveProjectAssets(audioProject("missing.wav"), root))).toEqual(
+      expect.objectContaining({ kind: "invalid-audio", reason: "missing" }),
+    );
+    expect(audioAsset(await resolveProjectAssets(audioProject("noise.wav"), root))).toEqual(
+      expect.objectContaining({ kind: "invalid-audio", reason: "unsupported-format" }),
     );
   });
 });

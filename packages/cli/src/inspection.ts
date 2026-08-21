@@ -1,5 +1,6 @@
 import type { CheckResult } from "@eac/checker";
 import {
+  audioClipDuration,
   stylePropertyEntries,
   type ExperienceIR,
   type NodeIR,
@@ -43,12 +44,25 @@ export type Inspection = Readonly<{
     groups: number;
     objects: number;
     images: number;
+    audioClips: number;
     timedProperties: number;
     writers: number;
     unsupportedProperties: number;
     maxDepth: number;
   }>;
   assets: readonly Readonly<{ node: string; path: string; status: string }>[];
+  audioClips: readonly Readonly<{
+    id: string;
+    scene: string;
+    path: string;
+    start: number;
+    end?: number;
+    trimStart: number;
+    trimEnd?: number;
+    volume: number;
+    fadeIn: number;
+    fadeOut: number;
+  }>[];
   validation: Readonly<{ errors: number; warnings: number }>;
 }>;
 
@@ -103,8 +117,32 @@ export function inspectExperience(experience: ExperienceIR, result: CheckResult)
     nodes: scene.nodes.map((node) => inspectNode(node, scene.id, new Set())),
   }));
   const nodes = scenes.flatMap((scene) => flatten(scene.nodes));
-  const assets = experience.scenes.flatMap((scene) =>
+  const imageAssets = experience.scenes.flatMap((scene) =>
     collectAssets(scene.nodes, scene.id, new Set()),
+  );
+  const audioClips = experience.scenes.flatMap((scene) =>
+    scene.audioClips.map((clip) => {
+      const duration = audioClipDuration(clip);
+      return {
+        id: clip.id,
+        scene: scene.id,
+        path: clip.asset.path,
+        start: clip.start.value,
+        ...(duration === undefined ? {} : { end: clip.start.value + duration }),
+        trimStart: clip.trimStart.value,
+        ...(clip.trimEnd === undefined ? {} : { trimEnd: clip.trimEnd.value }),
+        volume: clip.volume,
+        fadeIn: clip.fadeIn.value,
+        fadeOut: clip.fadeOut.value,
+      };
+    }),
+  );
+  const audioAssets = experience.scenes.flatMap((scene) =>
+    scene.audioClips.map((clip) => ({
+      node: `${scene.id}.audio.${clip.id}`,
+      path: clip.asset.path,
+      status: clip.asset.kind,
+    })),
   );
   return {
     version: experience.version,
@@ -120,6 +158,7 @@ export function inspectExperience(experience: ExperienceIR, result: CheckResult)
       groups: nodes.filter((node) => node.kind === "group").length,
       objects: nodes.filter((node) => node.kind !== "group").length,
       images: nodes.filter((node) => node.kind === "image").length,
+      audioClips: audioClips.length,
       timedProperties: result.stats.timedProperties,
       writers: nodes.reduce((total, node) => total + node.writers.length, 0),
       unsupportedProperties: experience.scenes.reduce(
@@ -128,7 +167,8 @@ export function inspectExperience(experience: ExperienceIR, result: CheckResult)
       ),
       maxDepth: Math.max(0, ...scenes.flatMap((scene) => scene.nodes.map(depthOf))),
     },
-    assets,
+    assets: [...imageAssets, ...audioAssets],
+    audioClips,
     validation: { errors: result.errors, warnings: result.warnings },
   };
 }
@@ -188,5 +228,9 @@ export function formatInspection(inspection: Inspection): string {
   const assets = inspection.assets.map(
     (asset) => `${asset.node}\n  ${asset.path} [${asset.status}]`,
   );
-  return `Experience: ${inspection.name}\nVersion: ${inspection.version} (IR ${inspection.irVersion})\nCanvas: ${inspection.canvas.width}x${inspection.canvas.height}\nTimeline: ${inspection.duration}s at ${inspection.fps}fps\n\nSummary:\n${inspection.counts.scenes} scenes\n${inspection.counts.nodes} nodes (${inspection.counts.groups} groups, ${inspection.counts.objects} objects, ${inspection.counts.images} images)\n${inspection.counts.timedProperties} timed properties\n${inspection.counts.writers} writers\n${inspection.counts.unsupportedProperties} unsupported properties\n${inspection.counts.maxDepth} max tree depth\n\nNode tree:\n${trees.join("\n") || "(empty)"}\n\nWriters:\n${writers.join("\n") || "(none)"}\n\nAssets:\n${assets.join("\n") || "(none)"}\n\nValidation:\n${inspection.validation.errors} errors\n${inspection.validation.warnings} warnings`;
+  const audio = inspection.audioClips.map(
+    (clip) =>
+      `${clip.scene}.audio.${clip.id}\n  ${clip.start.toFixed(3)}s..${clip.end?.toFixed(3) ?? "?"}s volume=${clip.volume} trim=${clip.trimStart.toFixed(3)}s..${clip.trimEnd?.toFixed(3) ?? "source-end"} fade=${clip.fadeIn.toFixed(3)}s/${clip.fadeOut.toFixed(3)}s`,
+  );
+  return `Experience: ${inspection.name}\nVersion: ${inspection.version} (IR ${inspection.irVersion})\nCanvas: ${inspection.canvas.width}x${inspection.canvas.height}\nTimeline: ${inspection.duration}s at ${inspection.fps}fps\n\nSummary:\n${inspection.counts.scenes} scenes\n${inspection.counts.nodes} nodes (${inspection.counts.groups} groups, ${inspection.counts.objects} objects, ${inspection.counts.images} images)\n${inspection.counts.audioClips} audio clips\n${inspection.counts.timedProperties} timed properties\n${inspection.counts.writers} writers\n${inspection.counts.unsupportedProperties} unsupported properties\n${inspection.counts.maxDepth} max tree depth\n\nNode tree:\n${trees.join("\n") || "(empty)"}\n\nWriters:\n${writers.join("\n") || "(none)"}\n\nAudio clips:\n${audio.join("\n") || "(none)"}\n\nAssets:\n${assets.join("\n") || "(none)"}\n\nValidation:\n${inspection.validation.errors} errors\n${inspection.validation.warnings} warnings`;
 }

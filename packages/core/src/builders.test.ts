@@ -63,4 +63,32 @@ describe("EaC DSL", () => {
     expect(node.ir.properties.scale.initial).toEqual({ kind: "scale", x: 1, y: 0.5 });
     expect(node.ir.properties.scale.segments[0]?.target).toEqual({ kind: "scale", x: 2, y: 1 });
   });
+
+  it("normalizes a timed local audio clip", () => {
+    const project = experience({
+      name: "audio",
+      width: px(100),
+      height: px(100),
+      duration: sec(3),
+    });
+    project.scene("main").audio("assets/click.wav", {
+      id: "click",
+      at: sec(1.2),
+      trim: { start: sec(0.1), end: sec(0.6) },
+      volume: 0.8,
+      fadeIn: sec(0.05),
+      fadeOut: sec(0.1),
+    });
+
+    expect(project.build().scenes[0]?.audioClips).toEqual([
+      expect.objectContaining({
+        id: "click",
+        asset: { kind: "local", path: "assets/click.wav" },
+        start: sec(1.2),
+        trimStart: sec(0.1),
+        trimEnd: sec(0.6),
+        volume: 0.8,
+      }),
+    ]);
+  });
 });

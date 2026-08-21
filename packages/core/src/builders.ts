@@ -1,4 +1,12 @@
-import { type ExperienceIR, type GeometryIR, type NodeIR, type SceneIR, type Vec2 } from "@eac/ir";
+import {
+  type AudioClipIR,
+  type ExperienceIR,
+  type GeometryIR,
+  type LocalAssetIR,
+  type NodeIR,
+  type SceneIR,
+  type Vec2,
+} from "@eac/ir";
 import { px, sec, type Length, type Time } from "@eac/units";
 import { GroupBuilder } from "./group-builder.js";
 import {
@@ -9,12 +17,35 @@ import {
   type TransformStyle,
 } from "./node-factory.js";
 import { ObjectBuilder } from "./object-builder.js";
+import { asset } from "./asset.js";
+
+export type AudioOptions = Readonly<{
+  id?: string;
+  at?: Time;
+  duration?: Time;
+  trim?: Readonly<{ start?: Time; end?: Time }>;
+  volume?: number;
+  fadeIn?: Time;
+  fadeOut?: Time;
+}>;
 
 export class SceneBuilder {
-  readonly #scene: { id: string; start: Time; duration: Time; nodes: NodeIR[] };
+  readonly #scene: {
+    id: string;
+    start: Time;
+    duration: Time;
+    nodes: NodeIR[];
+    audioClips: AudioClipIR[];
+  };
 
   constructor(id: string, options: Readonly<{ at?: Time; duration: Time }>) {
-    this.#scene = { id, start: options.at ?? sec(0), duration: options.duration, nodes: [] };
+    this.#scene = {
+      id,
+      start: options.at ?? sec(0),
+      duration: options.duration,
+      nodes: [],
+      audioClips: [],
+    };
   }
 
   get ir(): SceneIR {
@@ -89,6 +120,22 @@ export class SceneBuilder {
 
   image(id: string, options: ImageStyle): ObjectBuilder {
     return createImage(this.#scene.nodes, id, options);
+  }
+
+  audio(source: string | LocalAssetIR, options: AudioOptions = {}): AudioClipIR {
+    const clip: AudioClipIR = {
+      id: options.id ?? `audio-${this.#scene.audioClips.length + 1}`,
+      asset: typeof source === "string" ? asset(source) : source,
+      start: options.at ?? sec(0),
+      ...(options.duration === undefined ? {} : { duration: options.duration }),
+      trimStart: options.trim?.start ?? sec(0),
+      ...(options.trim?.end === undefined ? {} : { trimEnd: options.trim.end }),
+      volume: options.volume ?? 1,
+      fadeIn: options.fadeIn ?? sec(0),
+      fadeOut: options.fadeOut ?? sec(0),
+    };
+    this.#scene.audioClips.push(clip);
+    return clip;
   }
 
   group(id: string, style: TransformStyle = {}): GroupBuilder {
