@@ -2,3 +2,4 @@ dist
 coverage
 frames
 pnpm-lock.yaml
+docs/spec/
