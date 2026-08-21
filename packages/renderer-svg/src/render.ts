@@ -1,12 +1,12 @@
 import { execFile } from "node:child_process";
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { Worker } from "node:worker_threads";
-import type { ExperienceIR } from "@eac/ir";
+import { audioClipDuration, type AudioClipIR, type ExperienceIR } from "@eac/ir";
 import { Resvg } from "@resvg/resvg-js";
 import { renderSvg } from "./svg.js";
 
@@ -33,6 +33,13 @@ const rasterWorkerUrl = new URL(`data:text/javascript,${encodeURIComponent(raste
 
 type RasterResult = Readonly<{ frame: number; error?: string }>;
 export type RenderSequenceOptions = Readonly<{ concurrency?: number }>;
+export type EncodeMp4Options = Readonly<{ experience?: ExperienceIR }>;
+type AudioInput = Readonly<{
+  path: string;
+  clip: AudioClipIR;
+  start: number;
+  duration: number;
+}>;
 
 function isRasterResult(value: unknown): value is RasterResult {
   if (typeof value !== "object" || value === null) return false;
@@ -113,23 +120,95 @@ export async function renderPngSequence(
   });
 }
 
-export async function encodeMp4(
+const ffmpegNumber = (value: number): string => Number(value.toFixed(6)).toString();
+
+export function buildEncodeArguments(
   frameDirectory: string,
   fps: number,
   output: string,
-): Promise<void> {
-  await execFileAsync("ffmpeg", [
-    "-y",
-    "-framerate",
-    String(fps),
-    "-i",
-    join(frameDirectory, "frame-%06d.png"),
+  audio: readonly AudioInput[] = [],
+  totalDuration?: number,
+): readonly string[] {
+  const base = ["-y", "-framerate", String(fps), "-i", join(frameDirectory, "frame-%06d.png")];
+  if (audio.length === 0)
+    return [...base, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-movflags", "+faststart", output];
+  if (totalDuration === undefined || !Number.isFinite(totalDuration) || totalDuration <= 0)
+    throw new RangeError("audio muxing requires a positive finite experience duration");
+  const inputs = audio.flatMap((item) => ["-i", item.path]);
+  const clipFilters = audio.map((item, index) => {
+    const fadeIn = item.clip.fadeIn.value;
+    const fadeOut = item.clip.fadeOut.value;
+    const filters = [
+      `atrim=start=${ffmpegNumber(item.clip.trimStart.value)}:duration=${ffmpegNumber(item.duration)}`,
+      "asetpts=PTS-STARTPTS",
+      `volume=${ffmpegNumber(item.clip.volume)}`,
+      ...(fadeIn > 0 ? [`afade=t=in:st=0:d=${ffmpegNumber(fadeIn)}`] : []),
+      ...(fadeOut > 0
+        ? [`afade=t=out:st=${ffmpegNumber(item.duration - fadeOut)}:d=${ffmpegNumber(fadeOut)}`]
+        : []),
+      `adelay=${ffmpegNumber(item.start * 1_000)}:all=1`,
+    ];
+    return `[${index + 1}:a]${filters.join(",")}[eac-audio-${index}]`;
+  });
+  // `normalize=0` keeps each clip at its authored volume; amix would otherwise divide every
+  // input by the clip count, so adding a second clip would silently quieten the first.
+  const mixInputs = audio.map((_, index) => `[eac-audio-${index}]`).join("");
+  const mix = `${mixInputs}amix=inputs=${audio.length}:normalize=0:duration=longest:dropout_transition=0,apad=whole_dur=${ffmpegNumber(totalDuration)},atrim=duration=${ffmpegNumber(totalDuration)}[eac-audio]`;
+  return [
+    ...base,
+    ...inputs,
+    "-filter_complex",
+    [...clipFilters, mix].join(";"),
+    "-map",
+    "0:v:0",
+    "-map",
+    "[eac-audio]",
     "-c:v",
     "libx264",
+    "-c:a",
+    "aac",
     "-pix_fmt",
     "yuv420p",
     "-movflags",
     "+faststart",
+    "-shortest",
     output,
-  ]);
+  ];
+}
+
+async function materializeAudio(
+  experience: ExperienceIR,
+  frameDirectory: string,
+): Promise<readonly AudioInput[]> {
+  const entries = experience.scenes.flatMap((scene) =>
+    scene.audioClips.map((clip) => ({ clip, sceneStart: scene.start.value })),
+  );
+  return Promise.all(
+    entries.map(async ({ clip, sceneStart }, index) => {
+      if (clip.asset.kind !== "embedded-audio")
+        throw new TypeError(`Audio asset \`${clip.asset.path}\` is not renderable.`);
+      const duration = audioClipDuration(clip);
+      if (duration === undefined || !Number.isFinite(duration) || duration <= 0)
+        throw new RangeError(`Audio clip \`${clip.id}\` has no renderable duration.`);
+      const path = join(frameDirectory, `eac-audio-${String(index).padStart(3, "0")}.wav`);
+      await writeFile(path, Buffer.from(clip.asset.data, "base64"));
+      return { path, clip, start: sceneStart + clip.start.value, duration };
+    }),
+  );
+}
+
+export async function encodeMp4(
+  frameDirectory: string,
+  fps: number,
+  output: string,
+  options: EncodeMp4Options = {},
+): Promise<void> {
+  const audio =
+    options.experience === undefined
+      ? []
+      : await materializeAudio(options.experience, frameDirectory);
+  await execFileAsync(
+    "ffmpeg",
+    buildEncodeArguments(frameDirectory, fps, output, audio, options.experience?.duration.value),
+  );
 }

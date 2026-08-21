@@ -1,57 +1,52 @@
-import type {
-  ExperienceIR,
-  MotionSegment,
-  PropertyName,
-  PropertyValue,
-  TimedProperty,
-  Trajectory,
+import {
+  isValidEasing,
+  walkNodes,
+  type ExperienceIR,
+  type MotionSegment,
+  type PropertyName,
+  type PropertyValue,
+  type TimedProperty,
 } from "@eac/ir";
-import { isUnit, type UnitKind } from "@eac/units";
+import { isUnit, type UnitKind, type UnitValue } from "@eac/units";
 import { error, type Diagnostic } from "./diagnostic.js";
+import { isValidTrajectory } from "./trajectory-rules.js";
+import { runStyleRules } from "./style-rules.js";
+import { runAssetRules } from "./asset-rules.js";
 
-const propertyKinds: Readonly<Record<PropertyName, UnitKind | "vec2">> = {
+const propertyKinds: Readonly<Record<PropertyName, UnitKind | "vec2" | "scale">> = {
   position: "vec2",
   rotation: "angle",
+  scale: "scale",
   opacity: "opacity",
   depth: "depth",
 };
 
-function isFiniteUnit(value: unknown, kind: UnitKind): boolean {
+function isFiniteUnit<K extends UnitKind>(value: unknown, kind: K): value is UnitValue<K> {
   return isUnit(value, kind) && Number.isFinite(value.value);
 }
 
-function validValue(value: unknown, kind: UnitKind | "vec2"): boolean {
-  if (kind !== "vec2") return isFiniteUnit(value, kind);
+function isFiniteVector(
+  value: unknown,
+): value is Readonly<{ x: UnitValue<"length">; y: UnitValue<"length"> }> {
   if (typeof value !== "object" || value === null) return false;
   const vector = value as { x?: unknown; y?: unknown };
   return isFiniteUnit(vector.x, "length") && isFiniteUnit(vector.y, "length");
 }
 
-function validTrajectory(value: unknown): value is Trajectory {
-  if (typeof value !== "object" || value === null) return false;
-  const trajectory = value as {
-    kind?: unknown;
-    control1?: unknown;
-    control2?: unknown;
-    radius?: unknown;
-    turns?: unknown;
-  };
-  if (trajectory.kind === "linear") return true;
-  if (trajectory.kind === "bezier")
-    return validValue(trajectory.control1, "vec2") && validValue(trajectory.control2, "vec2");
-  if (trajectory.kind !== "cycloid") return false;
-  if (
-    !isUnit(trajectory.radius, "length") ||
-    !Number.isFinite(trajectory.radius.value) ||
-    trajectory.radius.value <= 0
-  )
-    return false;
-  return (
-    trajectory.turns === undefined ||
-    (typeof trajectory.turns === "number" &&
-      Number.isFinite(trajectory.turns) &&
-      trajectory.turns > 0)
-  );
+function validValue(value: unknown, kind: UnitKind | "vec2" | "scale"): boolean {
+  if (kind === "scale") {
+    if (typeof value !== "object" || value === null) return false;
+    const scale = value as { kind?: unknown; x?: unknown; y?: unknown };
+    return (
+      scale.kind === "scale" &&
+      typeof scale.x === "number" &&
+      Number.isFinite(scale.x) &&
+      typeof scale.y === "number" &&
+      Number.isFinite(scale.y)
+    );
+  }
+  if (kind !== "vec2") return isFiniteUnit(value, kind);
+  return isFiniteVector(value);
 }
 
 function numericAndUnits(experience: ExperienceIR): Diagnostic[] {
@@ -87,21 +82,21 @@ function numericAndUnits(experience: ExperienceIR): Diagnostic[] {
             ["use sec(value) or ms(value)"],
           ),
         );
-    for (const object of scene.objects) {
-      for (const name of Object.keys(object.properties) as PropertyName[]) {
-        const property = object.properties[name] as TimedProperty<PropertyValue>;
+    for (const { node } of walkNodes(scene.nodes)) {
+      for (const name of Object.keys(node.properties) as PropertyName[]) {
+        const property = node.properties[name] as TimedProperty<PropertyValue>;
         const kind = propertyKinds[name];
         if (!validValue(property.initial, kind))
           diagnostics.push(
             error(
               "eac::numeric::invalid",
-              `\`${object.id}.${name}\` has an invalid initial value.`,
-              `${scene.id}.${object.id}.${name}`,
+              `\`${node.id}.${name}\` has an invalid initial value.`,
+              `${scene.id}.${node.id}.${name}`,
               "NaN, Infinity, invalid vectors, and incorrect units cannot be rendered deterministically.",
               ["replace it with a finite value using the documented unit constructor"],
             ),
           );
-        for (const segment of property.segments as readonly MotionSegment<PropertyValue>[])
+        for (const segment of property.segments as readonly MotionSegment<PropertyValue>[]) {
           if (
             !validValue(segment.target, kind) ||
             (segment.from !== undefined && !validValue(segment.from, kind)) ||
@@ -112,11 +107,25 @@ function numericAndUnits(experience: ExperienceIR): Diagnostic[] {
               error(
                 "eac::numeric::invalid",
                 `Motion \`${segment.id}\` contains NaN, Infinity, an invalid vector, or an incorrect unit.`,
-                `${scene.id}.${object.id}.${name}`,
+                `${scene.id}.${node.id}.${name}`,
                 "All timed values must be finite and unit-correct to remain seekable.",
                 ["replace invalid values", "use eac docs for the expected units"],
               ),
             );
+          if (segment.easing !== undefined && !isValidEasing(segment.easing))
+            diagnostics.push(
+              error(
+                "eac::motion::invalid-easing",
+                `Motion \`${segment.id}\` has an invalid easing definition.`,
+                `${scene.id}.${node.id}.${name}`,
+                "Easing coordinates must be finite and cubic Bézier x coordinates must stay within 0–1.",
+                [
+                  "use easing.linear, easeIn, easeOut, or easeInOut",
+                  "use easing.cubicBezier with x coordinates from 0 to 1",
+                ],
+              ),
+            );
+        }
         if (name === "opacity")
           for (const segment of property.segments)
             if ("value" in segment.target && (segment.target.value < 0 || segment.target.value > 1))
@@ -124,23 +133,37 @@ function numericAndUnits(experience: ExperienceIR): Diagnostic[] {
                 error(
                   "eac::numeric::invalid-opacity",
                   `Motion \`${segment.id}\` targets opacity outside 0–1.`,
-                  `${scene.id}.${object.id}.opacity`,
+                  `${scene.id}.${node.id}.opacity`,
                   "Opacity outside the normalized range is invalid.",
                   ["use opacity(value) with a value from 0 to 1"],
                 ),
               );
       }
-      if (
-        object.properties.opacity.initial.value < 0 ||
-        object.properties.opacity.initial.value > 1
-      )
+      if (node.properties.opacity.initial.value < 0 || node.properties.opacity.initial.value > 1)
         diagnostics.push(
           error(
             "eac::numeric::invalid-opacity",
-            `\`${object.id}.opacity\` is outside 0–1.`,
-            `${scene.id}.${object.id}.opacity`,
+            `\`${node.id}.opacity\` is outside 0–1.`,
+            `${scene.id}.${node.id}.opacity`,
             "Opacity outside the normalized range is invalid.",
             ["use opacity(value) with a value from 0 to 1"],
+          ),
+        );
+      const scales = [
+        node.properties.scale.initial,
+        ...node.properties.scale.segments.flatMap((segment) => [
+          segment.target,
+          ...(segment.from === undefined ? [] : [segment.from]),
+        ]),
+      ];
+      if (scales.some((scale) => validValue(scale, "scale") && (scale.x <= 0 || scale.y <= 0)))
+        diagnostics.push(
+          error(
+            "eac::transform::invalid-scale",
+            `\`${node.id}.scale\` contains a non-positive scale.`,
+            `${scene.id}.${node.id}.scale`,
+            "EaC v0.2 requires positive scale components for deterministic non-reflecting transforms.",
+            ["use scale values greater than zero"],
           ),
         );
     }
@@ -151,7 +174,8 @@ function numericAndUnits(experience: ExperienceIR): Diagnostic[] {
 function geometry(experience: ExperienceIR): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   for (const scene of experience.scenes)
-    for (const object of scene.objects) {
+    for (const { node: object } of walkNodes(scene.nodes)) {
+      if (object.kind !== "object") continue;
       const geometry = object.geometry;
       const invalid =
         (geometry.kind === "rect" &&
@@ -160,7 +184,9 @@ function geometry(experience: ExperienceIR): Diagnostic[] {
             !isFiniteUnit(geometry.cornerRadius, "length") ||
             geometry.width.value <= 0 ||
             geometry.height.value <= 0 ||
-            geometry.cornerRadius.value < 0)) ||
+            geometry.cornerRadius.value < 0 ||
+            geometry.cornerRadius.value >
+              Math.min(geometry.width.value, geometry.height.value) / 2)) ||
         (geometry.kind === "circle" &&
           (!isFiniteUnit(geometry.radius, "length") || geometry.radius.value <= 0)) ||
         (geometry.kind === "text" &&
@@ -169,11 +195,15 @@ function geometry(experience: ExperienceIR): Diagnostic[] {
             geometry.fontSize.value <= 0)) ||
         (geometry.kind === "path" &&
           (geometry.points.length < 2 ||
-            !isFiniteUnit(geometry.strokeWidth, "length") ||
-            geometry.strokeWidth.value <= 0 ||
             geometry.points.some(
               (point) => !isFiniteUnit(point.x, "length") || !isFiniteUnit(point.y, "length"),
-            )));
+            ))) ||
+        (geometry.kind === "image" &&
+          (!isFiniteUnit(geometry.width, "length") ||
+            !isFiniteUnit(geometry.height, "length") ||
+            geometry.width.value <= 0 ||
+            geometry.height.value <= 0 ||
+            !["contain", "cover", "fill"].includes(geometry.fit)));
       if (invalid)
         diagnostics.push(
           error(
@@ -186,16 +216,16 @@ function geometry(experience: ExperienceIR): Diagnostic[] {
         );
       for (const segment of object.properties.position.segments) {
         const trajectory: unknown = segment.trajectory;
-        if (trajectory !== undefined && !validTrajectory(trajectory))
+        if (trajectory !== undefined && !isValidTrajectory(trajectory))
           diagnostics.push(
             error(
               "eac::geometry::invalid",
               `Motion \`${segment.id}\` has an invalid trajectory.`,
               `${scene.id}.${object.id}.position`,
-              "A trajectory must be a linear, cubic Bézier, or cycloid object with valid geometry.",
+              "A trajectory must use finite, non-degenerate geometry and deterministic parameters.",
               [
                 'use { kind: "linear" } for linear motion',
-                "use eac docs bezier or eac docs cycloid for curved motion",
+                "use eac docs trajectory for supported curved paths",
               ],
             ),
           );
@@ -205,5 +235,10 @@ function geometry(experience: ExperienceIR): Diagnostic[] {
 }
 
 export function runValueRules(experience: ExperienceIR): Diagnostic[] {
-  return [...numericAndUnits(experience), ...geometry(experience)];
+  return [
+    ...numericAndUnits(experience),
+    ...geometry(experience),
+    ...runStyleRules(experience),
+    ...runAssetRules(experience),
+  ];
 }

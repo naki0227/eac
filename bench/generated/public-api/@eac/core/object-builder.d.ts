@@ -1,25 +1,9 @@
-import type {
-  AppearanceIR,
-  GeometryIR,
-  ObjectIR,
-  PropertyMap,
-  PropertyName,
-  PropertyValue,
-  Trajectory,
-  UnsupportedProperty,
-  Vec2,
-} from "@eac/ir";
-import type { Angle, Depth, Opacity, Time } from "@eac/units";
-type MotionOptions<T extends PropertyValue> = Readonly<{
-  at: Time;
-  duration: Time;
-  from?: T;
-}>;
-export type MoveOptions = MotionOptions<Vec2> &
-  Readonly<{
-    trajectory?: Trajectory;
-  }>;
-export declare class ObjectBuilder {
+import type { AppearanceIR, ColorIR, GeometryIR, ObjectIR, PropertyMap } from "@eac/ir";
+import type { Length } from "@eac/units";
+import { type ColorInput } from "./color.js";
+import { type MotionOptions } from "./motion-normalizer.js";
+import { TransformBuilder } from "./transform-builder.js";
+export declare class ObjectBuilder extends TransformBuilder<ObjectIR> {
   #private;
   constructor(
     id: string,
@@ -28,20 +12,9 @@ export declare class ObjectBuilder {
     properties: PropertyMap,
     sourceOrder: number,
   );
-  get ir(): ObjectIR;
-  moveTo(target: Vec2, options: MoveOptions): this;
-  rotateTo(target: Angle, options: MotionOptions<Angle>): this;
-  fadeTo(target: Opacity, options: MotionOptions<Opacity>): this;
-  depthTo(target: Depth, options: MotionOptions<Depth>): this;
-  bringForward(
-    options: Readonly<{
-      at: Time;
-      duration: Time;
-      to: Depth;
-    }>,
-  ): this;
-  dependsOn(object: ObjectBuilder, property?: PropertyName): this;
-  unsupported(kind: UnsupportedProperty["kind"], name: string): this;
+  colorTo(target: ColorInput, options: MotionOptions<ColorIR>): this;
+  strokeColorTo(target: ColorInput, options: MotionOptions<ColorIR>): this;
+  blurTo(target: Length, options: MotionOptions<Length>): this;
 }
-export {};
+export type { FollowPathOptions, MoveOptions, ScaleInput } from "./transform-builder.js";
 //# sourceMappingURL=object-builder.d.ts.map

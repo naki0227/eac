@@ -20,6 +20,15 @@ export declare const defaultProperties: (position: Vec2) => {
     }>;
     segments: never[];
   };
+  scale: {
+    kind: "timed";
+    initial: {
+      kind: "scale";
+      x: number;
+      y: number;
+    };
+    segments: never[];
+  };
   opacity: {
     kind: "timed";
     initial: Readonly<{

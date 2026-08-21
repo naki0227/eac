@@ -1,0 +1,8 @@
+{
+  "name": "@eac/example-sequenced-motion",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@eac/core": "workspace:*"
+  }
+}

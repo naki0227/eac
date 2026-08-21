@@ -1,3 +1,6 @@
+import { assetDocs } from "./asset-docs.js";
+import { v02Docs } from "./v02-docs.js";
+
 export type ApiDoc = Readonly<{
   name: string;
   summary: string;
@@ -6,7 +9,18 @@ export type ApiDoc = Readonly<{
   keywords: readonly string[];
 }>;
 
-export const apiDocs: readonly ApiDoc[] = [
+export type ApiCategory =
+  | "Primitives"
+  | "Motion"
+  | "Composition"
+  | "Trajectory"
+  | "Styling"
+  | "Assets"
+  | "Audio"
+  | "Units"
+  | "Validation";
+
+const baseApiDocs: readonly ApiDoc[] = [
   {
     name: "experience",
     summary: "Creates an Experience builder with canvas, duration, and FPS.",
@@ -20,6 +34,14 @@ export const apiDocs: readonly ApiDoc[] = [
     signature: "project.scene(id, { at?, duration? })",
     example: 'project.scene("main", { at: sec(0), duration: sec(5) })',
     keywords: ["timeline", "structure", "section"],
+  },
+  {
+    name: "group",
+    summary: "Creates a transformable parent whose children keep local coordinates.",
+    signature: "scene.group(id, { position?, rotation?, scale?, opacity?, depth? })",
+    example:
+      'const card = scene.group("card", { position: { x: px(200), y: px(300) } }); card.rect("body", { position: { x: px(0), y: px(0) }, ... })',
+    keywords: ["group", "parent", "children", "nested", "transform", "composition"],
   },
   {
     name: "rect",
@@ -61,6 +83,13 @@ export const apiDocs: readonly ApiDoc[] = [
     keywords: ["move", "position", "animate", "motion", "linear"],
   },
   {
+    name: "moveBy",
+    summary: "Moves by an offset from the position evaluated at `at`.",
+    signature: "object.moveBy(delta, { at, duration, easing? })",
+    example: "dot.moveBy({ x: px(120), y: px(-20) }, { at: sec(1), duration: sec(0.8) })",
+    keywords: ["move", "relative", "offset", "position", "motion"],
+  },
+  {
     name: "bezier",
     summary: "Uses a cubic Bézier trajectory for moveTo.",
     signature: 'trajectory: { kind: "bezier", control1, control2 }',
@@ -77,11 +106,71 @@ export const apiDocs: readonly ApiDoc[] = [
     keywords: ["cycloid", "roll", "wheel", "curve", "path", "move along"],
   },
   {
+    name: "followPath",
+    summary: "Moves position along one absolute deterministic path writer.",
+    signature: "object.followPath(path, { at, duration, easing? })",
+    example:
+      "dot.followPath(trajectory.orbit({ center, radius: px(80) }), { at: sec(1), duration: sec(2) })",
+    keywords: ["follow", "path", "trajectory", "position", "orbit", "spiral", "wave"],
+  },
+  {
+    name: "ellipse",
+    summary:
+      "Creates an absolute elliptical arc with explicit center, radii, angles, and rotation.",
+    signature:
+      "trajectory.ellipse({ center, radiusX, radiusY, rotation?, startAngle?, endAngle? })",
+    example:
+      "trajectory.ellipse({ center, radiusX: px(120), radiusY: px(60), startAngle: deg(0), endAngle: deg(180) })",
+    keywords: ["ellipse", "arc", "path", "trajectory", "follow"],
+  },
+  {
+    name: "orbit",
+    summary: "Creates a circular absolute orbit with a start angle and positive turn count.",
+    signature: "trajectory.orbit({ center, radius, startAngle?, turns? })",
+    example: "trajectory.orbit({ center, radius: px(100), turns: 2 })",
+    keywords: ["orbit", "circle", "path", "trajectory", "follow"],
+  },
+  {
+    name: "spiral",
+    summary: "Creates an absolute spiral by interpolating radius and angle.",
+    signature: "trajectory.spiral({ center, startRadius, endRadius, turns?, startAngle? })",
+    example: "trajectory.spiral({ center, startRadius: px(10), endRadius: px(120), turns: 2 })",
+    keywords: ["spiral", "radius", "path", "trajectory", "follow"],
+  },
+  {
+    name: "wave",
+    summary: "Creates a sine wave perpendicular to a non-degenerate start/end baseline.",
+    signature: "trajectory.wave({ start, end, amplitude, cycles?, phase? })",
+    example: "trajectory.wave({ start, end, amplitude: px(24), cycles: 3 })",
+    keywords: ["wave", "sine", "path", "trajectory", "follow"],
+  },
+  {
     name: "rotateTo",
     summary: "Rotates from the angle at `at` to a target angle.",
     signature: "object.rotateTo(angle, { at, duration })",
     example: "dot.rotateTo(deg(180), { at: sec(1), duration: sec(2) })",
     keywords: ["rotate", "angle", "spin", "turn"],
+  },
+  {
+    name: "rotateBy",
+    summary: "Rotates by an angle from the rotation evaluated at `at`.",
+    signature: "object.rotateBy(angle, { at, duration, easing? })",
+    example: "dot.rotateBy(deg(90), { at: sec(1), duration: sec(0.5) })",
+    keywords: ["rotate", "relative", "angle", "spin", "turn"],
+  },
+  {
+    name: "scaleTo",
+    summary: "Scales uniformly or per axis to an absolute target.",
+    signature: "object.scaleTo(number | { x, y }, { at, duration, easing? })",
+    example: "dot.scaleTo(1.2, { at: sec(1), duration: sec(0.4) })",
+    keywords: ["scale", "resize", "transform", "absolute"],
+  },
+  {
+    name: "scaleBy",
+    summary: "Adds a scale delta to the scale evaluated at `at`.",
+    signature: "object.scaleBy(number | { x, y }, { at, duration, easing? })",
+    example: "dot.scaleBy(0.2, { at: sec(2), duration: sec(0.3) })",
+    keywords: ["scale", "relative", "resize", "transform"],
   },
   {
     name: "fadeTo",
@@ -98,6 +187,88 @@ export const apiDocs: readonly ApiDoc[] = [
     keywords: ["depth", "z", "front", "back", "layer"],
   },
   {
+    name: "depthBy",
+    summary: "Moves by a depth offset from the depth evaluated at `at`.",
+    signature: "object.depthBy(delta, { at, duration, easing? })",
+    example: "dot.depthBy(depth(20), { at: sec(1), duration: sec(0.5) })",
+    keywords: ["depth", "relative", "z", "front", "back", "layer"],
+  },
+  {
+    name: "easing",
+    summary: "Provides deterministic linear, ease-in/out, and cubic Bézier timing curves.",
+    signature:
+      "easing.linear | easing.easeIn | easing.easeOut | easing.easeInOut | easing.cubicBezier(x1, y1, x2, y2)",
+    example: "dot.moveTo(target, { at: sec(1), duration: sec(0.8), easing: easing.easeOut })",
+    keywords: ["easing", "timing", "curve", "cubic bezier", "animation"],
+  },
+  {
+    name: "motion",
+    summary: "Creates an immutable atomic MotionPlan without assigning a runtime start time.",
+    signature: "motion.moveTo(node, target, { duration, easing? }) and matching property helpers",
+    example: "const enter = motion.fadeTo(title, opacity(1), { duration: sec(0.4) })",
+    keywords: ["motion", "plan", "compose", "animation", "atomic"],
+  },
+  {
+    name: "sequence",
+    summary: "Composes MotionPlans with deterministic cumulative offsets.",
+    signature: "sequence(...plans)",
+    example: "schedule(sequence(enter, move, exit), { at: sec(1) })",
+    keywords: ["sequence", "after", "serial", "plan", "timeline", "compose"],
+  },
+  {
+    name: "parallel",
+    summary: "Composes MotionPlans at one shared start and uses the longest duration.",
+    signature: "parallel(...plans)",
+    example: "schedule(parallel(move, fade), { at: sec(1) })",
+    keywords: ["parallel", "together", "simultaneous", "plan", "timeline", "compose"],
+  },
+  {
+    name: "delay",
+    summary: "Creates empty plan time or shifts a MotionPlan by a fixed duration.",
+    signature: "delay(duration, plan?)",
+    example: "sequence(enter, delay(sec(0.5)), exit)",
+    keywords: ["delay", "wait", "pause", "offset", "plan", "timeline"],
+  },
+  {
+    name: "stagger",
+    summary: "Offsets one plan per stable input index by a fixed interval.",
+    signature: "stagger(items, interval, (item, index) => MotionPlan)",
+    example:
+      "schedule(stagger(dots, sec(0.1), (dot) => motion.fadeTo(dot, opacity(1), { duration: sec(0.3) })))",
+    keywords: ["stagger", "cascade", "list", "items", "offset", "plan", "timeline"],
+  },
+  {
+    name: "schedule",
+    summary: "Lowers a MotionPlan at an explicit time into ordinary checked TimedProperty writes.",
+    signature: "schedule(plan, { at? })",
+    example: "schedule(plan, { at: sec(1) })",
+    keywords: ["schedule", "apply", "lower", "plan", "timeline", "start"],
+  },
+  {
+    name: "presets",
+    summary:
+      "Provides small fadeIn, fadeOut, popIn, and riseIn plans built from public primitives.",
+    signature: "presets.fadeIn(node, options) | fadeOut | popIn | riseIn",
+    example: "schedule(presets.popIn(card, { duration: sec(0.4) }), { at: sec(1) })",
+    keywords: ["preset", "fade in", "fade out", "pop in", "rise in", "reusable", "plan"],
+  },
+  {
+    name: "color",
+    summary:
+      "Creates normalized sRGB colors and animates fill with deterministic channel interpolation.",
+    signature: "rgb(r, g, b) | rgba(r, g, b, a) | hex(value); object.colorTo(color, options)",
+    example: 'card.colorTo(hex("#38bdf8"), { at: sec(1), duration: sec(0.5) })',
+    keywords: ["color", "rgb", "rgba", "hex", "fill", "animate", "srgb"],
+  },
+  {
+    name: "styling",
+    summary: "Configures stroke, corner radius, blur, shadow, and deterministic text attributes.",
+    signature:
+      "{ stroke, strokeWidth, cornerRadius, blur, shadow, fontFamily, fontWeight, textAlign, letterSpacing }",
+    example: "card.blurTo(px(4), { at: sec(1), duration: sec(0.4) })",
+    keywords: ["style", "stroke", "corner", "blur", "shadow", "font", "text"],
+  },
+  {
     name: "bringForward",
     summary: "Semantic depthTo primitive that brings an object forward.",
     signature: "object.bringForward({ at, duration, to })",
@@ -106,28 +277,6 @@ export const apiDocs: readonly ApiDoc[] = [
   },
 ];
 
-const tokenize = (value: string): string[] => value.toLowerCase().match(/[a-z0-9]+/g) ?? [];
+export const apiDocs: readonly ApiDoc[] = [...baseApiDocs, ...assetDocs, ...v02Docs];
 
-export function searchDocs(query: string): readonly ApiDoc[] {
-  const tokens = tokenize(query);
-  return apiDocs
-    .map((doc, index) => {
-      const name = doc.name.toLowerCase();
-      const haystack = [name, doc.summary, ...doc.keywords].join(" ").toLowerCase();
-      const score = tokens.reduce(
-        (total, token) =>
-          total +
-          (name === token ? 10 : name.includes(token) ? 5 : haystack.includes(token) ? 1 : 0),
-        0,
-      );
-      return { doc, score, index };
-    })
-    .filter((result) => result.score > 0)
-    .sort((a, b) => b.score - a.score || a.index - b.index)
-    .slice(0, 5)
-    .map((result) => result.doc);
-}
-
-export function formatApiDoc(doc: ApiDoc): string {
-  return `${doc.name}\n\n${doc.summary}\n\nSignature:\n${doc.signature}\n\nExample:\n${doc.example}`;
-}
+export { categorizeDocs, categoryForDoc, formatApiDoc, searchDocs } from "./doc-catalog.js";

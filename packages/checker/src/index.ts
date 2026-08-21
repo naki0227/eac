@@ -1,4 +1,4 @@
-import type { ExperienceIR } from "@eac/ir";
+import { visualObjects, walkNodes, type ExperienceIR } from "@eac/ir";
 import { type Diagnostic, formatDiagnostic } from "./diagnostic.js";
 import { runHarness, type HarnessStats } from "./harness.js";
 import { runStaticRules } from "./static-rules.js";
@@ -15,13 +15,19 @@ export type CheckResult = Readonly<{
 
 const preventsHarness = (diagnostic: Diagnostic): boolean =>
   diagnostic.severity === "error" &&
-  [
-    "eac::timeline::invalid-fps",
-    "eac::unit::invalid",
-    "eac::numeric::invalid",
-    "eac::numeric::invalid-opacity",
-    "eac::geometry::invalid",
-  ].includes(diagnostic.id);
+  (diagnostic.id.startsWith("eac::asset::") ||
+    [
+      "eac::timeline::invalid-fps",
+      "eac::unit::invalid",
+      "eac::numeric::invalid",
+      "eac::numeric::invalid-opacity",
+      "eac::transform::invalid-scale",
+      "eac::motion::invalid-easing",
+      "eac::geometry::invalid",
+      "eac::color::invalid",
+      "eac::style::invalid",
+      "eac::hierarchy::cycle",
+    ].includes(diagnostic.id));
 
 export function checkExperience(experience: ExperienceIR): CheckResult {
   const staticDiagnostics = runStaticRules(experience);
@@ -31,9 +37,13 @@ export function checkExperience(experience: ExperienceIR): CheckResult {
         diagnostics: [],
         stats: {
           frames: 0,
-          objects: experience.scenes.reduce((total, scene) => total + scene.objects.length, 0),
+          objects: experience.scenes.reduce(
+            (total, scene) => total + visualObjects(scene.nodes).length,
+            0,
+          ),
           timedProperties: experience.scenes.reduce(
-            (total, scene) => total + scene.objects.length * 4,
+            (total, scene) =>
+              total + walkNodes(scene.nodes).length * 5 + visualObjects(scene.nodes).length * 3,
             0,
           ),
           invalidTransforms: 0,

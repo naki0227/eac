@@ -46,6 +46,12 @@ importers:
         specifier: ^3.6.2
         version: 3.9.6
 
+  examples/audio-sting:
+    dependencies:
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/basic-motion:
     dependencies:
       '@eac/core':
@@ -53,6 +59,42 @@ importers:
         version: link:../../packages/core
 
   examples/cycloid-depth:
+    dependencies:
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
+  examples/group-transform:
+    dependencies:
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
+  examples/image-card:
+    dependencies:
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
+  examples/path-follow:
+    dependencies:
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
+  examples/sequenced-motion:
+    dependencies:
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
+  examples/showcase:
+    dependencies:
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
+  examples/styled-title:
     dependencies:
       '@eac/core':
         specifier: workspace:*

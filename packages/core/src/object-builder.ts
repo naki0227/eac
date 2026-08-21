@@ -1,28 +1,27 @@
 import type {
   AppearanceIR,
+  ColorIR,
   GeometryIR,
-  MotionSegment,
   ObjectIR,
   PropertyMap,
-  PropertyName,
-  PropertyValue,
-  Trajectory,
-  UnsupportedProperty,
-  Vec2,
+  StylePropertyMap,
+  StylePropertyName,
 } from "@eac/ir";
-import type { Angle, Depth, Opacity, Time } from "@eac/units";
+import type { Length } from "@eac/units";
+import { normalizeColor, type ColorInput } from "./color.js";
+import {
+  normalizeAbsoluteProperty,
+  type MotionOperation,
+  type MotionOptions,
+} from "./motion-normalizer.js";
+import { TransformBuilder } from "./transform-builder.js";
 
-type MutableObject = { -readonly [K in keyof ObjectIR]: ObjectIR[K] };
-type MotionOptions<T extends PropertyValue> = Readonly<{
-  at: Time;
-  duration: Time;
-  from?: T;
-}>;
-export type MoveOptions = MotionOptions<Vec2> & Readonly<{ trajectory?: Trajectory }>;
-
-export class ObjectBuilder {
-  readonly #object: MutableObject;
-  #motionCount = 0;
+export class ObjectBuilder extends TransformBuilder<ObjectIR> {
+  readonly #baseStyleProperties: StylePropertyMap;
+  readonly #styleOperations: {
+    [K in StylePropertyName]: MotionOperation<StylePropertyMap[K]["initial"]>[];
+  } = { fill: [], stroke: [], blur: [] };
+  #styleMotionCount = 0;
 
   constructor(
     id: string,
@@ -31,7 +30,8 @@ export class ObjectBuilder {
     properties: PropertyMap,
     sourceOrder: number,
   ) {
-    this.#object = {
+    const object: ObjectIR = {
+      kind: "object",
       id,
       geometry,
       appearance,
@@ -40,61 +40,52 @@ export class ObjectBuilder {
       unsupportedProperties: [],
       sourceOrder,
     };
+    super(object);
+    this.#baseStyleProperties = appearance;
   }
 
-  get ir(): ObjectIR {
-    return this.#object;
-  }
-
-  #addMotion<K extends PropertyName>(
+  #addStyleMotion<K extends StylePropertyName>(
     name: K,
-    target: PropertyMap[K]["initial"],
-    options: MotionOptions<PropertyMap[K]["initial"]>,
-    trajectory?: Trajectory,
+    value: StylePropertyMap[K]["initial"],
+    options: MotionOptions<StylePropertyMap[K]["initial"]>,
   ): this {
-    const property = this.#object.properties[name];
-    const segment = {
-      id: `${this.#object.id}.${name}.${++this.#motionCount}`,
-      start: options.at,
-      duration: options.duration,
-      target,
-      ...(options.from === undefined ? {} : { from: options.from }),
-      ...(trajectory === undefined ? {} : { trajectory }),
-    } as MotionSegment<PropertyMap[K]["initial"]>;
-    this.#object.properties = {
-      ...this.#object.properties,
-      [name]: { ...property, segments: [...property.segments, segment] },
+    const count = ++this.#styleMotionCount;
+    const operation: MotionOperation<StylePropertyMap[K]["initial"]> = {
+      id: `${this.ir.id}.${name}.${count}`,
+      ordinal: count,
+      mode: "absolute",
+      value,
+      options,
     };
+    const operations = this.#styleOperations[name] as MotionOperation<
+      StylePropertyMap[K]["initial"]
+    >[];
+    operations.push(operation);
+    this.replaceNode({
+      appearance: {
+        ...this.ir.appearance,
+        fill: normalizeAbsoluteProperty(this.#baseStyleProperties.fill, this.#styleOperations.fill),
+        stroke: normalizeAbsoluteProperty(
+          this.#baseStyleProperties.stroke,
+          this.#styleOperations.stroke,
+        ),
+        blur: normalizeAbsoluteProperty(this.#baseStyleProperties.blur, this.#styleOperations.blur),
+      },
+    });
     return this;
   }
 
-  moveTo(target: Vec2, options: MoveOptions): this {
-    return this.#addMotion("position", target, options, options.trajectory);
+  colorTo(target: ColorInput, options: MotionOptions<ColorIR>): this {
+    return this.#addStyleMotion("fill", normalizeColor(target), options);
   }
 
-  rotateTo(target: Angle, options: MotionOptions<Angle>): this {
-    return this.#addMotion("rotation", target, options);
+  strokeColorTo(target: ColorInput, options: MotionOptions<ColorIR>): this {
+    return this.#addStyleMotion("stroke", normalizeColor(target), options);
   }
 
-  fadeTo(target: Opacity, options: MotionOptions<Opacity>): this {
-    return this.#addMotion("opacity", target, options);
-  }
-
-  depthTo(target: Depth, options: MotionOptions<Depth>): this {
-    return this.#addMotion("depth", target, options);
-  }
-
-  bringForward(options: Readonly<{ at: Time; duration: Time; to: Depth }>): this {
-    return this.depthTo(options.to, options);
-  }
-
-  dependsOn(object: ObjectBuilder, property: PropertyName = "position"): this {
-    this.#object.dependencies = [...this.#object.dependencies, `${object.ir.id}.${property}`];
-    return this;
-  }
-
-  unsupported(kind: UnsupportedProperty["kind"], name: string): this {
-    this.#object.unsupportedProperties = [...this.#object.unsupportedProperties, { kind, name }];
-    return this;
+  blurTo(target: Length, options: MotionOptions<Length>): this {
+    return this.#addStyleMotion("blur", target, options);
   }
 }
+
+export type { FollowPathOptions, MoveOptions, ScaleInput } from "./transform-builder.js";

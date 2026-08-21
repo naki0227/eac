@@ -1,0 +1,8 @@
+{
+  "name": "@eac/example-image-card",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@eac/core": "workspace:*"
+  }
+}

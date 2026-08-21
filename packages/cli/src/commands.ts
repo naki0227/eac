@@ -5,7 +5,8 @@ import { checkExperience, formatCheckResult } from "@eac/checker";
 import { encodeMp4, renderPng, renderPngSequence, renderSvg } from "@eac/renderer-svg";
 import * as prettier from "prettier";
 import { guide, help } from "./content.js";
-import { apiDocs, formatApiDoc, searchDocs } from "./docs.js";
+import { apiDocs, categorizeDocs, categoryForDoc, formatApiDoc, searchDocs } from "./docs.js";
+import { formatInspection, inspectExperience } from "./inspection.js";
 import { findProject, loadProject } from "./project.js";
 import { writePreview } from "./preview.js";
 
@@ -16,15 +17,19 @@ const valueAfter = (args: readonly string[], flag: string): string | undefined =
 const projectArgument = (args: readonly string[]): string | undefined =>
   args.find((arg) => arg.endsWith(".mjs") || arg.endsWith(".json"));
 
+async function formatOptions(path: string): Promise<prettier.Options> {
+  return { ...(await prettier.resolveConfig(path)), filepath: path };
+}
+
 async function formatIsValid(path: string): Promise<boolean> {
   const source = await readFile(path, "utf8");
-  return prettier.check(source, { filepath: path });
+  return prettier.check(source, await formatOptions(path));
 }
 
 async function formatProject(args: readonly string[]): Promise<number> {
   const project = await findProject(projectArgument(args));
   const source = await readFile(project, "utf8");
-  const formatted = await prettier.format(source, { filepath: project });
+  const formatted = await prettier.format(source, await formatOptions(project));
   if (source !== formatted) await writeFile(project, formatted);
   console.log(`${source === formatted ? "Already formatted" : "Formatted"} ${project}`);
   return 0;
@@ -42,8 +47,9 @@ async function inspect(args: readonly string[]): Promise<number> {
   const project = await findProject(projectArgument(args));
   const experience = await loadProject(project);
   const result = checkExperience(experience);
+  const inspection = inspectExperience(experience, result);
   console.log(
-    `Experience: ${experience.name}\n\nCanvas:\n${experience.canvas.width.value}x${experience.canvas.height.value}\n\nDuration:\n${experience.duration.value}s\n\nScenes:\n${experience.scenes.map((scene) => `- ${scene.id}`).join("\n")}\n\nObjects:\n${result.stats.objects}\n\nTimed Properties:\n${result.stats.timedProperties}\n\nUnsupported Properties:\n${experience.scenes.reduce((total, scene) => total + scene.objects.reduce((count, object) => count + object.unsupportedProperties.length, 0), 0)}\n\nValidation:\n${result.errors} errors\n${result.warnings} warnings`,
+    args.includes("--json") ? JSON.stringify(inspection, null, 2) : formatInspection(inspection),
   );
   return result.errors === 0 ? 0 : 1;
 }
@@ -94,7 +100,7 @@ async function render(args: readonly string[]): Promise<number> {
   const temporary = await mkdtemp(join(tmpdir(), "eac-render-"));
   try {
     await renderPngSequence(experience, temporary);
-    await encodeMp4(temporary, experience.fps, output);
+    await encodeMp4(temporary, experience.fps, output, { experience });
   } finally {
     await rm(temporary, { recursive: true, force: true });
   }
@@ -120,18 +126,22 @@ export async function runCli(args: readonly string[]): Promise<number> {
       const results = searchDocs(query);
       console.log(
         results.length
-          ? `Relevant APIs:\n\n${results.map((doc) => `${doc.name} — ${doc.summary}`).join("\n")}\n\nSee:\n${results.map((doc) => `eac docs ${doc.name}`).join("\n")}`
+          ? `Relevant APIs:\n\n${results.map((doc) => `[${categoryForDoc(doc)}] ${doc.name} — ${doc.summary}`).join("\n")}\n\nSee:\n${results.map((doc) => `eac docs ${doc.name}`).join("\n")}`
           : `No APIs matched "${query}". Try a simpler action or object name.`,
       );
       return results.length ? 0 : 1;
     }
     if (rest[0] === undefined) {
-      console.log(
-        `Available APIs:\n\n${apiDocs.map((doc) => `${doc.name} — ${doc.summary}`).join("\n")}\n\nFor details:\neac docs <api>`,
-      );
+      const categories = [...categorizeDocs()]
+        .map(
+          ([category, docs]) =>
+            `${category}:\n${docs.map((doc) => `  ${doc.name} — ${doc.summary}`).join("\n")}`,
+        )
+        .join("\n\n");
+      console.log(`Available APIs:\n\n${categories}\n\nFor details:\neac docs <api>`);
       return 0;
     }
-    const topic = rest[0];
+    const topic = rest[0] === "trajectory" && rest[1] !== undefined ? rest[1] : rest[0];
     const doc = apiDocs.find((item) => item.name.toLowerCase() === topic.toLowerCase());
     if (!doc) {
       console.error(`Unknown API \`${topic}\`. Run eac docs search "<what you want to do>".`);

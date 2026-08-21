@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { depth, experience, px, sec } from "@eac/core";
+import { depth, experience, opacity, px, sec } from "@eac/core";
 import { renderPng, renderSvg } from "./index.js";
 
 describe("SVG renderer", () => {
@@ -36,5 +36,109 @@ describe("SVG renderer", () => {
       .circle("dot", { position: { x: px(8), y: px(8) }, radius: px(4), fill: "red" });
     const png = renderPng(project.build(), 0);
     expect([...png.slice(1, 4)]).toEqual([80, 78, 71]);
+  });
+
+  it("renders non-uniform scale as an explicit transform", () => {
+    const project = experience({
+      name: "scale",
+      width: px(100),
+      height: px(100),
+      duration: sec(1),
+    });
+    project.scene("main").rect("card", {
+      position: { x: px(50), y: px(50) },
+      width: px(20),
+      height: px(10),
+      fill: "red",
+      scale: { x: 2, y: 0.5 },
+    });
+
+    expect(renderSvg(project.build(), 0)).toContain('transform="matrix(2 0 0 0.5 50 50)"');
+  });
+
+  it("lowers nested group transforms and opacity to evaluated leaf SVG", () => {
+    const project = experience({
+      name: "group",
+      width: px(100),
+      height: px(100),
+      duration: sec(1),
+    });
+    const group = project.scene("main").group("parent", {
+      position: { x: px(40), y: px(50) },
+      scale: 2,
+      opacity: opacity(0.5),
+    });
+    group.circle("dot", {
+      position: { x: px(10), y: px(0) },
+      radius: px(4),
+      fill: "red",
+      opacity: opacity(0.5),
+    });
+
+    const svg = renderSvg(project.build(), 0);
+    expect(svg).toContain('id="dot" transform="matrix(2 0 0 2 60 50)" opacity="0.25"');
+    expect(svg).not.toContain('id="parent"');
+  });
+
+  it("renders normalized color, text attributes, blur, and shadow structurally", () => {
+    const project = experience({
+      name: "style",
+      width: px(200),
+      height: px(100),
+      duration: sec(1),
+    });
+    project.scene("main").text("title", "Styled", {
+      position: { x: px(100), y: px(50) },
+      fontSize: px(24),
+      fontFamily: "Inter & Friends",
+      fontWeight: 700,
+      textAlign: "middle",
+      letterSpacing: px(2),
+      fill: "#336699cc",
+      stroke: "white",
+      strokeWidth: px(2),
+      blur: px(1),
+      shadow: { offsetX: px(3), offsetY: px(4), blur: px(5), color: "#0008" },
+    });
+
+    const svg = renderSvg(project.build(), 0);
+    expect(svg).toContain("<feGaussianBlur");
+    expect(svg).toContain("<feFlood");
+    expect(svg).toContain("<feMerge");
+    expect(svg).toContain('font-family="Inter &amp; Friends"');
+    expect(svg).toContain('font-weight="700" text-anchor="middle" letter-spacing="2"');
+    expect(svg).toContain('fill="#336699" fill-opacity="0.8"');
+  });
+
+  it("embeds resolved image bytes with deterministic fit lowering", () => {
+    const project = experience({
+      name: "image",
+      width: px(100),
+      height: px(100),
+      duration: sec(1),
+    });
+    const image = project.scene("main").image("photo", {
+      src: "photo.svg",
+      position: { x: px(50), y: px(50) },
+      width: px(80),
+      height: px(60),
+      fit: "cover",
+    });
+    if (image.ir.geometry.kind !== "image") throw new Error("Expected image in test fixture.");
+    const data = Buffer.from('<svg width="2" height="1"></svg>').toString("base64");
+    Object.assign(image.ir.geometry, {
+      asset: {
+        kind: "embedded",
+        path: "photo.svg",
+        mimeType: "image/svg+xml",
+        data,
+        intrinsicWidth: 2,
+        intrinsicHeight: 1,
+      },
+    });
+
+    const svg = renderSvg(project.build(), 0);
+    expect(svg).toContain('preserveAspectRatio="xMidYMid slice"');
+    expect(svg).toContain(`href="data:image/svg+xml;base64,${data}"`);
   });
 });

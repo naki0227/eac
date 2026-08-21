@@ -1,5 +1,15 @@
-import type { ExperienceIR, PropertyName } from "@eac/ir";
+import {
+  stylePropertyEntries,
+  walkNodes,
+  type ExperienceIR,
+  type NodeIR,
+  type PropertyName,
+  type TimedProperty,
+  type PropertyValue,
+} from "@eac/ir";
 import { error, type Diagnostic } from "./diagnostic.js";
+import { runAudioRules } from "./audio-rules.js";
+import { conflictTimeline } from "./timeline-visualization.js";
 import { runValueRules } from "./value-rules.js";
 
 function timeline(experience: ExperienceIR): Diagnostic[] {
@@ -20,9 +30,9 @@ function timeline(experience: ExperienceIR): Diagnostic[] {
         ),
       );
     }
-    for (const object of scene.objects) {
-      for (const name of Object.keys(object.properties) as PropertyName[]) {
-        for (const segment of object.properties[name].segments) {
+    for (const { node } of walkNodes(scene.nodes)) {
+      for (const name of Object.keys(node.properties) as PropertyName[]) {
+        for (const segment of node.properties[name].segments) {
           if (
             segment.start.value < 0 ||
             segment.duration.value <= 0 ||
@@ -32,7 +42,7 @@ function timeline(experience: ExperienceIR): Diagnostic[] {
               error(
                 "eac::timeline::invalid-range",
                 `Motion \`${segment.id}\` has an invalid time range.`,
-                `${scene.id}.${object.id}.${name}: ${segment.start.value}s–${segment.start.value + segment.duration.value}s`,
+                `${scene.id}.${node.id}.${name}: ${segment.start.value}s–${segment.start.value + segment.duration.value}s`,
                 "Motions must start at or after 0, have positive duration, and fit within their scene.",
                 ["change the motion's at", "shorten the motion's duration"],
               ),
@@ -40,6 +50,23 @@ function timeline(experience: ExperienceIR): Diagnostic[] {
           }
         }
       }
+      if (node.kind === "object")
+        for (const [name, property] of stylePropertyEntries(node))
+          for (const segment of property.segments)
+            if (
+              segment.start.value < 0 ||
+              segment.duration.value <= 0 ||
+              segment.start.value + segment.duration.value > scene.duration.value
+            )
+              diagnostics.push(
+                error(
+                  "eac::timeline::invalid-range",
+                  `Motion \`${segment.id}\` has an invalid time range.`,
+                  `${scene.id}.${node.id}.${name}: ${segment.start.value}s–${segment.start.value + segment.duration.value}s`,
+                  "Motions must start at or after 0, have positive duration, and fit within their scene.",
+                  ["change the motion's at", "shorten the motion's duration"],
+                ),
+              );
     }
   }
   return diagnostics;
@@ -47,51 +74,57 @@ function timeline(experience: ExperienceIR): Diagnostic[] {
 
 function conflicts(experience: ExperienceIR): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
-  for (const scene of experience.scenes)
-    for (const object of scene.objects) {
-      for (const name of Object.keys(object.properties) as PropertyName[]) {
-        const segments = [...object.properties[name].segments].sort(
-          (a, b) => a.start.value - b.start.value,
+  const checkProperty = (
+    sceneId: string,
+    sceneDuration: number,
+    nodeId: string,
+    name: string,
+    property: TimedProperty<PropertyValue>,
+  ): void => {
+    const segments = [...property.segments].sort((a, b) => a.start.value - b.start.value);
+    for (let index = 0; index < segments.length; index++)
+      for (let otherIndex = index + 1; otherIndex < segments.length; otherIndex++) {
+        const first = segments[index];
+        const second = segments[otherIndex];
+        if (!first || !second) continue;
+        const overlapStart = Math.max(first.start.value, second.start.value);
+        const overlapEnd = Math.min(
+          first.start.value + first.duration.value,
+          second.start.value + second.duration.value,
         );
-        for (let index = 0; index < segments.length; index++)
-          for (let otherIndex = index + 1; otherIndex < segments.length; otherIndex++) {
-            const first = segments[index];
-            const second = segments[otherIndex];
-            if (!first || !second) continue;
-            const overlapStart = Math.max(first.start.value, second.start.value);
-            const overlapEnd = Math.min(
-              first.start.value + first.duration.value,
-              second.start.value + second.duration.value,
-            );
-            if (overlapStart < overlapEnd)
-              diagnostics.push(
-                error(
-                  "eac::motion::conflicting-writers",
-                  `\`${object.id}.${name}\` has multiple writers between ${overlapStart.toFixed(2)}s and ${overlapEnd.toFixed(2)}s.`,
-                  `${scene.id}.${object.id}.${name}`,
-                  "EaC v0.1 allows only one writer per property for any point in time.",
-                  ["change one motion's at", "shorten one motion's duration"],
-                  [
-                    `${first.id}  ${first.start.value.toFixed(1)} ━━━ ${first.start.value + first.duration.value}s`,
-                    `${second.id}  ${second.start.value.toFixed(1)} ━━━ ${second.start.value + second.duration.value}s`,
-                  ],
-                ),
-              );
-          }
+        if (overlapStart < overlapEnd)
+          diagnostics.push(
+            error(
+              "eac::motion::conflicting-writers",
+              `\`${nodeId}.${name}\` has multiple writers between ${overlapStart.toFixed(2)}s and ${overlapEnd.toFixed(2)}s.`,
+              `${sceneId}.${nodeId}.${name}`,
+              "EaC v0.2 allows only one writer per property for any point in time.",
+              ["change one motion's at", "shorten one motion's duration"],
+              conflictTimeline(`${sceneId}.${nodeId}.${name}`, first, second, sceneDuration),
+            ),
+          );
       }
+  };
+  for (const scene of experience.scenes)
+    for (const { node } of walkNodes(scene.nodes)) {
+      for (const name of Object.keys(node.properties) as PropertyName[])
+        checkProperty(scene.id, scene.duration.value, node.id, name, node.properties[name]);
+      if (node.kind === "object")
+        for (const [name, property] of stylePropertyEntries(node))
+          checkProperty(scene.id, scene.duration.value, node.id, name, property);
     }
   return diagnostics;
 }
 
 function unsupported(experience: ExperienceIR): Diagnostic[] {
   return experience.scenes.flatMap((scene) =>
-    scene.objects.flatMap((object) =>
-      object.unsupportedProperties.map((property) =>
+    walkNodes(scene.nodes).flatMap(({ node }) =>
+      node.unsupportedProperties.map((property) =>
         error(
           `eac::property::${property.kind}-unsupported`,
-          `${property.kind === "reactive" ? "ReactiveProperty" : "SimulatedProperty"} is not supported by EaC v0.1.`,
-          `${scene.id}.${object.id}.${property.name}`,
-          "v0.1 guarantees direct seeking and supports TimedProperty only.",
+          `${property.kind === "reactive" ? "ReactiveProperty" : "SimulatedProperty"} is not supported by EaC v0.2.`,
+          `${scene.id}.${node.id}.${property.name}`,
+          "v0.2 guarantees direct seeking and supports TimedProperty only.",
           ["replace it with a TimedProperty", "remove the unsupported property"],
         ),
       ),
@@ -103,7 +136,8 @@ function cycles(experience: ExperienceIR): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   const edges = new Map<string, readonly string[]>();
   for (const scene of experience.scenes)
-    for (const object of scene.objects) edges.set(`${object.id}.position`, object.dependencies);
+    for (const { node } of walkNodes(scene.nodes))
+      edges.set(`${node.id}.position`, node.dependencies);
   const active = new Set<string>();
   const done = new Set<string>();
   const visit = (node: string, trail: readonly string[]): void => {
@@ -131,6 +165,33 @@ function cycles(experience: ExperienceIR): Diagnostic[] {
   return diagnostics;
 }
 
+function hierarchy(experience: ExperienceIR): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  for (const scene of experience.scenes) {
+    const active = new Set<NodeIR>();
+    const visit = (node: NodeIR, path: readonly string[]): void => {
+      if (active.has(node)) {
+        diagnostics.push(
+          error(
+            "eac::hierarchy::cycle",
+            "Cyclic group hierarchy detected.",
+            [...path, node.id].join(" → "),
+            "A node tree must have a finite parent-to-child evaluation order.",
+            ["remove the child reference that points back to an ancestor"],
+          ),
+        );
+        return;
+      }
+      if (node.kind !== "group") return;
+      active.add(node);
+      for (const child of node.children) visit(child, [...path, node.id]);
+      active.delete(node);
+    };
+    for (const node of scene.nodes) visit(node, [scene.id]);
+  }
+  return diagnostics;
+}
+
 export function runStaticRules(experience: ExperienceIR): Diagnostic[] {
   const fpsDiagnostic =
     !Number.isInteger(experience.fps) || experience.fps <= 0
@@ -146,8 +207,10 @@ export function runStaticRules(experience: ExperienceIR): Diagnostic[] {
       : [];
   return [
     ...fpsDiagnostic,
+    ...hierarchy(experience),
     ...timeline(experience),
     ...runValueRules(experience),
+    ...runAudioRules(experience),
     ...unsupported(experience),
     ...conflicts(experience),
     ...cycles(experience),

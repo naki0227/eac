@@ -1,50 +1,51 @@
 import {
-  defaultProperties,
-  type AppearanceIR,
+  type AudioClipIR,
   type ExperienceIR,
   type GeometryIR,
-  type ObjectIR,
+  type LocalAssetIR,
+  type NodeIR,
   type SceneIR,
   type Vec2,
 } from "@eac/ir";
+import { px, sec, type Length, type Time } from "@eac/units";
+import { GroupBuilder } from "./group-builder.js";
 import {
-  deg,
-  depth,
-  opacity,
-  px,
-  sec,
-  type Angle,
-  type Depth,
-  type Length,
-  type Opacity,
-  type Time,
-} from "@eac/units";
+  createImage,
+  createObject,
+  type ImageStyle,
+  type ObjectStyle,
+  type TransformStyle,
+} from "./node-factory.js";
 import { ObjectBuilder } from "./object-builder.js";
+import { asset } from "./asset.js";
 
-type ObjectStyle = Readonly<{
-  position: Vec2;
-  fill: string;
-  stroke?: string;
-  rotation?: Angle;
-  opacity?: Opacity;
-  depth?: Depth;
+export type AudioOptions = Readonly<{
+  id?: string;
+  at?: Time;
+  duration?: Time;
+  trim?: Readonly<{ start?: Time; end?: Time }>;
+  volume?: number;
+  fadeIn?: Time;
+  fadeOut?: Time;
 }>;
 
-function properties(style: ObjectStyle) {
-  const defaults = defaultProperties(style.position);
-  return {
-    ...defaults,
-    rotation: { ...defaults.rotation, initial: style.rotation ?? deg(0) },
-    opacity: { ...defaults.opacity, initial: style.opacity ?? opacity(1) },
-    depth: { ...defaults.depth, initial: style.depth ?? depth(0) },
-  };
-}
-
 export class SceneBuilder {
-  readonly #scene: { id: string; start: Time; duration: Time; objects: ObjectIR[] };
+  readonly #scene: {
+    id: string;
+    start: Time;
+    duration: Time;
+    nodes: NodeIR[];
+    audioClips: AudioClipIR[];
+  };
 
   constructor(id: string, options: Readonly<{ at?: Time; duration: Time }>) {
-    this.#scene = { id, start: options.at ?? sec(0), duration: options.duration, objects: [] };
+    this.#scene = {
+      id,
+      start: options.at ?? sec(0),
+      duration: options.duration,
+      nodes: [],
+      audioClips: [],
+    };
   }
 
   get ir(): SceneIR {
@@ -52,19 +53,7 @@ export class SceneBuilder {
   }
 
   #object(id: string, geometry: GeometryIR, style: ObjectStyle): ObjectBuilder {
-    const appearance: AppearanceIR = {
-      fill: style.fill,
-      ...(style.stroke === undefined ? {} : { stroke: style.stroke }),
-    };
-    const object = new ObjectBuilder(
-      id,
-      geometry,
-      appearance,
-      properties(style),
-      this.#scene.objects.length,
-    );
-    this.#scene.objects.push(object.ir);
-    return object;
+    return createObject(this.#scene.nodes, id, geometry, style);
   }
 
   rect(
@@ -90,13 +79,25 @@ export class SceneBuilder {
   text(
     id: string,
     text: string,
-    options: ObjectStyle & Readonly<{ fontSize: Length; width?: Length }>,
+    options: ObjectStyle &
+      Readonly<{
+        fontSize: Length;
+        width?: Length;
+        fontFamily?: string;
+        fontWeight?: number;
+        textAlign?: "start" | "middle" | "end";
+        letterSpacing?: Length;
+      }>,
   ): ObjectBuilder {
     const geometry: GeometryIR = {
       kind: "text",
       text,
       fontSize: options.fontSize,
       ...(options.width === undefined ? {} : { width: options.width }),
+      fontFamily: options.fontFamily ?? "sans-serif",
+      fontWeight: options.fontWeight ?? 400,
+      textAlign: options.textAlign ?? "start",
+      letterSpacing: options.letterSpacing ?? px(0),
     };
     return this.#object(id, geometry, options);
   }
@@ -112,16 +113,42 @@ export class SceneBuilder {
         kind: "path",
         points,
         closed: options.closed ?? false,
-        strokeWidth: options.strokeWidth ?? px(1),
       },
       options,
     );
+  }
+
+  image(id: string, options: ImageStyle): ObjectBuilder {
+    return createImage(this.#scene.nodes, id, options);
+  }
+
+  audio(source: string | LocalAssetIR, options: AudioOptions = {}): AudioClipIR {
+    const clip: AudioClipIR = {
+      id: options.id ?? `audio-${this.#scene.audioClips.length + 1}`,
+      asset: typeof source === "string" ? asset(source) : source,
+      start: options.at ?? sec(0),
+      ...(options.duration === undefined ? {} : { duration: options.duration }),
+      trimStart: options.trim?.start ?? sec(0),
+      ...(options.trim?.end === undefined ? {} : { trimEnd: options.trim.end }),
+      volume: options.volume ?? 1,
+      fadeIn: options.fadeIn ?? sec(0),
+      fadeOut: options.fadeOut ?? sec(0),
+    };
+    this.#scene.audioClips.push(clip);
+    return clip;
+  }
+
+  group(id: string, style: TransformStyle = {}): GroupBuilder {
+    const group = new GroupBuilder(id, style, this.#scene.nodes.length);
+    this.#scene.nodes.push(group.ir);
+    return group;
   }
 }
 
 export class ExperienceBuilder {
   readonly #experience: {
-    version: "0.1";
+    version: "0.2";
+    irVersion: 2;
     name: string;
     canvas: { width: Length; height: Length };
     duration: Time;
@@ -139,7 +166,8 @@ export class ExperienceBuilder {
     }>,
   ) {
     this.#experience = {
-      version: "0.1",
+      version: "0.2",
+      irVersion: 2,
       name: options.name,
       canvas: { width: options.width, height: options.height },
       duration: options.duration,

@@ -1,6 +1,6 @@
 {
-  "help": "EaC — Experience as Code\n\nEaC is a deterministic creative runtime.\n\nIf this is your first time using EaC:\n\n1. Run `eac guide`\n2. Inspect the project with `eac inspect`\n3. Build one scene at a time\n4. Start with static geometry\n5. Add timed motion\n6. Run `eac check`\n7. Fix all errors\n8. Preview\n9. Render\n\nDo not attempt to invent EaC APIs.\n\nIf you are unsure which API to use:\n  eac docs search \"<what you want to do>\"\n\nFor an API:\n  eac docs <api>\n\nTo format a project after a check diagnostic:\n  eac format <project>",
-  "guide": "HOW TO BUILD WITH EAC\n\nPhase 1 — Understand\n- Read the task\n- Determine canvas size\n- Determine duration\n\nPhase 2 — Structure\n- Create scenes\n- Identify objects\n\nPhase 3 — Static Composition\n- Place Rect / Circle / Text / Path\n- Run eac check\n\nPhase 4 — Motion\n- Add one motion group at a time\n- Prefer existing primitives\n- Never invent API names\n- Use eac docs search when uncertain\n\nPhase 5 — Validate\n- Run eac check\n- Read the full diagnostic\n- Fix the cause, not only the symptom\n\nPhase 6 — Preview\n- Preview before rendering\n\nPhase 7 — Render\n- Render only after eac check passes\n\nDo not generate the entire experience in one pass.",
+  "help": "EaC — Experience as Code\n\nEaC is a deterministic creative runtime.\n\nIf this is your first time using EaC:\n\n1. Run `eac guide`\n2. Inspect the project with `eac inspect`\n3. Build one scene at a time\n4. Start with static geometry\n5. Add timed motion\n6. Run `eac check`\n7. Fix all errors\n8. Preview\n9. Render\n\nDo not attempt to invent EaC APIs.\n\nIf you are unsure which API to use:\n  eac docs search \"<what you want to do>\"\n\nFor an API:\n  eac docs <api>\n\nTo format a project after a check diagnostic:\n  eac format <project>\n\nFor a machine-readable node tree, writers, assets, and validation summary:\n  eac inspect --json",
+  "guide": "HOW TO BUILD WITH EAC\n\nPhase 1 — Understand\n- Read the task\n- Determine canvas size\n- Determine duration\n\nPhase 2 — Structure\n- Create scenes\n- Use groups for local parent/child transforms\n- Identify Rect / Circle / Text / Path / Image nodes\n\nPhase 3 — Static Composition\n- Place Rect / Circle / Text / Path\n- Use project-relative assets only\n- Add normalized color and styling\n- Run eac check\n\nPhase 4 — Motion\n- Add one motion group at a time\n- Use sequence / parallel / stagger for reusable plans\n- Use followPath for one deterministic position writer\n- Prefer existing primitives\n- Never invent API names\n- Use eac docs search when uncertain\n\nPhase 5 — Validate\n- Run eac check\n- Read the full diagnostic\n- Fix the cause, not only the symptom\n\nOptional Audio\n- Use frozen project-relative WAV assets\n- HTML preview is silent; eac render muxes checked audio into MP4\n\nPhase 6 — Preview\n- Preview before rendering\n- Seek, step frames, and change playback speed without changing the experience\n\nPhase 7 — Render\n- Render only after eac check passes\n\nDo not generate the entire experience in one pass.",
   "apiDocs": [
     {
       "name": "experience",
@@ -15,6 +15,13 @@
       "signature": "project.scene(id, { at?, duration? })",
       "example": "project.scene(\"main\", { at: sec(0), duration: sec(5) })",
       "keywords": ["timeline", "structure", "section"]
+    },
+    {
+      "name": "group",
+      "summary": "Creates a transformable parent whose children keep local coordinates.",
+      "signature": "scene.group(id, { position?, rotation?, scale?, opacity?, depth? })",
+      "example": "const card = scene.group(\"card\", { position: { x: px(200), y: px(300) } }); card.rect(\"body\", { position: { x: px(0), y: px(0) }, ... })",
+      "keywords": ["group", "parent", "children", "nested", "transform", "composition"]
     },
     {
       "name": "rect",
@@ -52,6 +59,13 @@
       "keywords": ["move", "position", "animate", "motion", "linear"]
     },
     {
+      "name": "moveBy",
+      "summary": "Moves by an offset from the position evaluated at `at`.",
+      "signature": "object.moveBy(delta, { at, duration, easing? })",
+      "example": "dot.moveBy({ x: px(120), y: px(-20) }, { at: sec(1), duration: sec(0.8) })",
+      "keywords": ["move", "relative", "offset", "position", "motion"]
+    },
+    {
       "name": "bezier",
       "summary": "Uses a cubic Bézier trajectory for moveTo.",
       "signature": "trajectory: { kind: \"bezier\", control1, control2 }",
@@ -66,11 +80,67 @@
       "keywords": ["cycloid", "roll", "wheel", "curve", "path", "move along"]
     },
     {
+      "name": "followPath",
+      "summary": "Moves position along one absolute deterministic path writer.",
+      "signature": "object.followPath(path, { at, duration, easing? })",
+      "example": "dot.followPath(trajectory.orbit({ center, radius: px(80) }), { at: sec(1), duration: sec(2) })",
+      "keywords": ["follow", "path", "trajectory", "position", "orbit", "spiral", "wave"]
+    },
+    {
+      "name": "ellipse",
+      "summary": "Creates an absolute elliptical arc with explicit center, radii, angles, and rotation.",
+      "signature": "trajectory.ellipse({ center, radiusX, radiusY, rotation?, startAngle?, endAngle? })",
+      "example": "trajectory.ellipse({ center, radiusX: px(120), radiusY: px(60), startAngle: deg(0), endAngle: deg(180) })",
+      "keywords": ["ellipse", "arc", "path", "trajectory", "follow"]
+    },
+    {
+      "name": "orbit",
+      "summary": "Creates a circular absolute orbit with a start angle and positive turn count.",
+      "signature": "trajectory.orbit({ center, radius, startAngle?, turns? })",
+      "example": "trajectory.orbit({ center, radius: px(100), turns: 2 })",
+      "keywords": ["orbit", "circle", "path", "trajectory", "follow"]
+    },
+    {
+      "name": "spiral",
+      "summary": "Creates an absolute spiral by interpolating radius and angle.",
+      "signature": "trajectory.spiral({ center, startRadius, endRadius, turns?, startAngle? })",
+      "example": "trajectory.spiral({ center, startRadius: px(10), endRadius: px(120), turns: 2 })",
+      "keywords": ["spiral", "radius", "path", "trajectory", "follow"]
+    },
+    {
+      "name": "wave",
+      "summary": "Creates a sine wave perpendicular to a non-degenerate start/end baseline.",
+      "signature": "trajectory.wave({ start, end, amplitude, cycles?, phase? })",
+      "example": "trajectory.wave({ start, end, amplitude: px(24), cycles: 3 })",
+      "keywords": ["wave", "sine", "path", "trajectory", "follow"]
+    },
+    {
       "name": "rotateTo",
       "summary": "Rotates from the angle at `at` to a target angle.",
       "signature": "object.rotateTo(angle, { at, duration })",
       "example": "dot.rotateTo(deg(180), { at: sec(1), duration: sec(2) })",
       "keywords": ["rotate", "angle", "spin", "turn"]
+    },
+    {
+      "name": "rotateBy",
+      "summary": "Rotates by an angle from the rotation evaluated at `at`.",
+      "signature": "object.rotateBy(angle, { at, duration, easing? })",
+      "example": "dot.rotateBy(deg(90), { at: sec(1), duration: sec(0.5) })",
+      "keywords": ["rotate", "relative", "angle", "spin", "turn"]
+    },
+    {
+      "name": "scaleTo",
+      "summary": "Scales uniformly or per axis to an absolute target.",
+      "signature": "object.scaleTo(number | { x, y }, { at, duration, easing? })",
+      "example": "dot.scaleTo(1.2, { at: sec(1), duration: sec(0.4) })",
+      "keywords": ["scale", "resize", "transform", "absolute"]
+    },
+    {
+      "name": "scaleBy",
+      "summary": "Adds a scale delta to the scale evaluated at `at`.",
+      "signature": "object.scaleBy(number | { x, y }, { at, duration, easing? })",
+      "example": "dot.scaleBy(0.2, { at: sec(2), duration: sec(0.3) })",
+      "keywords": ["scale", "relative", "resize", "transform"]
     },
     {
       "name": "fadeTo",
@@ -87,11 +157,174 @@
       "keywords": ["depth", "z", "front", "back", "layer"]
     },
     {
+      "name": "depthBy",
+      "summary": "Moves by a depth offset from the depth evaluated at `at`.",
+      "signature": "object.depthBy(delta, { at, duration, easing? })",
+      "example": "dot.depthBy(depth(20), { at: sec(1), duration: sec(0.5) })",
+      "keywords": ["depth", "relative", "z", "front", "back", "layer"]
+    },
+    {
+      "name": "easing",
+      "summary": "Provides deterministic linear, ease-in/out, and cubic Bézier timing curves.",
+      "signature": "easing.linear | easing.easeIn | easing.easeOut | easing.easeInOut | easing.cubicBezier(x1, y1, x2, y2)",
+      "example": "dot.moveTo(target, { at: sec(1), duration: sec(0.8), easing: easing.easeOut })",
+      "keywords": ["easing", "timing", "curve", "cubic bezier", "animation"]
+    },
+    {
+      "name": "motion",
+      "summary": "Creates an immutable atomic MotionPlan without assigning a runtime start time.",
+      "signature": "motion.moveTo(node, target, { duration, easing? }) and matching property helpers",
+      "example": "const enter = motion.fadeTo(title, opacity(1), { duration: sec(0.4) })",
+      "keywords": ["motion", "plan", "compose", "animation", "atomic"]
+    },
+    {
+      "name": "sequence",
+      "summary": "Composes MotionPlans with deterministic cumulative offsets.",
+      "signature": "sequence(...plans)",
+      "example": "schedule(sequence(enter, move, exit), { at: sec(1) })",
+      "keywords": ["sequence", "after", "serial", "plan", "timeline", "compose"]
+    },
+    {
+      "name": "parallel",
+      "summary": "Composes MotionPlans at one shared start and uses the longest duration.",
+      "signature": "parallel(...plans)",
+      "example": "schedule(parallel(move, fade), { at: sec(1) })",
+      "keywords": ["parallel", "together", "simultaneous", "plan", "timeline", "compose"]
+    },
+    {
+      "name": "delay",
+      "summary": "Creates empty plan time or shifts a MotionPlan by a fixed duration.",
+      "signature": "delay(duration, plan?)",
+      "example": "sequence(enter, delay(sec(0.5)), exit)",
+      "keywords": ["delay", "wait", "pause", "offset", "plan", "timeline"]
+    },
+    {
+      "name": "stagger",
+      "summary": "Offsets one plan per stable input index by a fixed interval.",
+      "signature": "stagger(items, interval, (item, index) => MotionPlan)",
+      "example": "schedule(stagger(dots, sec(0.1), (dot) => motion.fadeTo(dot, opacity(1), { duration: sec(0.3) })))",
+      "keywords": ["stagger", "cascade", "list", "items", "offset", "plan", "timeline"]
+    },
+    {
+      "name": "schedule",
+      "summary": "Lowers a MotionPlan at an explicit time into ordinary checked TimedProperty writes.",
+      "signature": "schedule(plan, { at? })",
+      "example": "schedule(plan, { at: sec(1) })",
+      "keywords": ["schedule", "apply", "lower", "plan", "timeline", "start"]
+    },
+    {
+      "name": "presets",
+      "summary": "Provides small fadeIn, fadeOut, popIn, and riseIn plans built from public primitives.",
+      "signature": "presets.fadeIn(node, options) | fadeOut | popIn | riseIn",
+      "example": "schedule(presets.popIn(card, { duration: sec(0.4) }), { at: sec(1) })",
+      "keywords": ["preset", "fade in", "fade out", "pop in", "rise in", "reusable", "plan"]
+    },
+    {
+      "name": "color",
+      "summary": "Creates normalized sRGB colors and animates fill with deterministic channel interpolation.",
+      "signature": "rgb(r, g, b) | rgba(r, g, b, a) | hex(value); object.colorTo(color, options)",
+      "example": "card.colorTo(hex(\"#38bdf8\"), { at: sec(1), duration: sec(0.5) })",
+      "keywords": ["color", "rgb", "rgba", "hex", "fill", "animate", "srgb"]
+    },
+    {
+      "name": "styling",
+      "summary": "Configures stroke, corner radius, blur, shadow, and deterministic text attributes.",
+      "signature": "{ stroke, strokeWidth, cornerRadius, blur, shadow, fontFamily, fontWeight, textAlign, letterSpacing }",
+      "example": "card.blurTo(px(4), { at: sec(1), duration: sec(0.4) })",
+      "keywords": ["style", "stroke", "corner", "blur", "shadow", "font", "text"]
+    },
+    {
       "name": "bringForward",
       "summary": "Semantic depthTo primitive that brings an object forward.",
       "signature": "object.bringForward({ at, duration, to })",
       "example": "dot.bringForward({ at: sec(1), duration: sec(2), to: depth(100) })",
       "keywords": ["front", "forward", "z order", "layer", "depth"]
+    },
+    {
+      "name": "image",
+      "summary": "Creates an image from a safe project-relative PNG, JPEG, or SVG asset.",
+      "signature": "scene.image(id, { src, position, width, height, fit? })",
+      "example": "scene.image(\"photo\", { src: \"assets/photo.png\", position, width: px(320), height: px(180), fit: \"cover\" })",
+      "keywords": ["image", "asset", "photo", "picture", "png", "jpeg", "svg", "contain", "cover"]
+    },
+    {
+      "name": "asset",
+      "summary": "Creates a validated local asset reference; remote and traversing paths are rejected.",
+      "signature": "asset(projectRelativePath)",
+      "example": "const photo = asset(\"assets/photo.png\")",
+      "keywords": ["asset", "local", "file", "path", "security", "image"]
+    },
+    {
+      "name": "trajectory",
+      "summary": "Creates deterministic paths for followPath or trajectory options for moveTo.",
+      "signature": "trajectory.ellipse(...) | orbit(...) | spiral(...) | wave(...) | linear",
+      "example": "eac docs spiral",
+      "keywords": ["trajectory", "path", "ellipse", "orbit", "spiral", "wave", "bezier", "cycloid"]
+    },
+    {
+      "name": "colorTo",
+      "summary": "Animates fill color using deterministic normalized sRGB channel interpolation.",
+      "signature": "object.colorTo(color, { at, duration, easing? })",
+      "example": "card.colorTo(hex(\"#38bdf8\"), { at: sec(1), duration: sec(0.5) })",
+      "keywords": ["fill", "color", "animate", "srgb", "style"]
+    },
+    {
+      "name": "strokeColorTo",
+      "summary": "Animates stroke color without replacing the fill writer.",
+      "signature": "object.strokeColorTo(color, { at, duration, easing? })",
+      "example": "card.strokeColorTo(hex(\"#ffffff\"), { at: sec(1), duration: sec(0.5) })",
+      "keywords": ["stroke", "outline", "color", "animate", "style"]
+    },
+    {
+      "name": "blurTo",
+      "summary": "Animates a non-negative SVG-rendered blur radius.",
+      "signature": "object.blurTo(length, { at, duration, easing? })",
+      "example": "card.blurTo(px(4), { at: sec(1), duration: sec(0.4) })",
+      "keywords": ["blur", "filter", "style", "animate", "soften"]
+    },
+    {
+      "name": "audio",
+      "summary": "Schedules a deterministic local WAV clip for full MP4 rendering.",
+      "signature": "scene.audio(path, { id?, at?, duration?, trim?, volume?, fadeIn?, fadeOut? })",
+      "example": "scene.audio(\"assets/click.wav\", { at: sec(1.2), volume: 0.8, fadeOut: sec(0.1) })",
+      "keywords": ["audio", "sound", "wav", "clip", "trim", "volume", "fade", "mux"]
+    },
+    {
+      "name": "units",
+      "summary": "Creates explicit length, time, angle, opacity, and depth values.",
+      "signature": "px(value) | sec(value) | ms(value) | deg(value) | rad(value) | opacity(value) | depth(value)",
+      "example": "{ x: px(100), at: sec(1), rotation: deg(45), opacity: opacity(0.8) }",
+      "keywords": [
+        "units",
+        "px",
+        "seconds",
+        "milliseconds",
+        "degrees",
+        "radians",
+        "opacity",
+        "depth"
+      ]
+    },
+    {
+      "name": "inspect",
+      "summary": "Prints the node tree, normalized writers, assets, counts, and validation summary.",
+      "signature": "eac inspect [project] [--json]",
+      "example": "eac inspect eac.config.mjs --json",
+      "keywords": ["inspect", "tree", "writers", "json", "assets", "debug", "validation"]
+    },
+    {
+      "name": "check",
+      "summary": "Runs static rules and the deterministic frame harness with actionable diagnostics.",
+      "signature": "eac check [project] [--ci]",
+      "example": "eac check eac.config.mjs --ci",
+      "keywords": ["check", "validate", "diagnostic", "errors", "warnings", "ci", "conflict"]
+    },
+    {
+      "name": "preview",
+      "summary": "Writes an interactive HTML timeline with seek, stepping, time, and playback speed.",
+      "signature": "eac preview [project] [--output preview.html]",
+      "example": "eac preview eac.config.mjs --output preview.html",
+      "keywords": ["preview", "play", "pause", "seek", "step", "speed", "timeline"]
     }
   ]
 }
