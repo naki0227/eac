@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts"],
+  "references": [
+    { "path": "../../packages/units" },
+    { "path": "../../packages/ir" },
+    { "path": "../../packages/core" },
+    { "path": "../../packages/checker" },
+    { "path": "../../packages/cli" }
+  ]
+}

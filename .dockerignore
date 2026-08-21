@@ -1,0 +1,11 @@
+.git
+.bench-private
+node_modules
+**/dist
+coverage
+frames
+docs/reports
+docs/TODO.md
+bench/results
+*.mp4
+*.png

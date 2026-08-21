@@ -10,6 +10,11 @@
   },
   "scripts": {
     "build": "tsc -b",
+    "bench:prepare": "pnpm build && node bench/harness/dist/src/cli.js prepare",
+    "bench:smoke": "pnpm build && node bench/harness/dist/src/cli.js smoke",
+    "bench:run": "pnpm build && node bench/harness/dist/src/cli.js run",
+    "bench:run-all": "pnpm build && node bench/harness/dist/src/cli.js run-all",
+    "bench:analyze": "pnpm build && node bench/harness/dist/src/cli.js analyze",
     "clean": "tsc -b --clean",
     "eac": "node packages/cli/dist/bin.js",
     "typecheck": "tsc -b --pretty false",

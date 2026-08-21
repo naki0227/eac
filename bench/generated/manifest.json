@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "cliVersion": "0.1.0",
+  "files": {
+    "bench/generated/README.md": "d7cd5df1f6cb01593fcde79fe3dfd5d32f4a69fa9495cc541e5eb6ab863b789f",
+    "bench/generated/cli.json": "79d28f9b067e8a27726ca755cff87dd58dffa2fdb9bf5bf995531affb371f1c5",
+    "bench/generated/public-api-names.json": "42a0870d0d18bbc8d18df53a3adb940883e432cd83676ac0d6c24d8f8736fe57",
+    "bench/generated/public-api/@eac/core/builders.d.ts": "1aadc21f33a0123dfa4a8bcea38c442ec8565bba110587ef13340c9b4c39f488",
+    "bench/generated/public-api/@eac/core/index.d.ts": "67f7ecfc60c6f081a5a61c91024fa14553a2e9d62444ebb9e0ab8e1268a70686",
+    "bench/generated/public-api/@eac/core/object-builder.d.ts": "851ecefe0959ede8e1058b1a04f469780b289d8026b64664ab6759779e7ce476",
+    "bench/generated/public-api/@eac/ir/evaluate.d.ts": "bb3cb6ec9fffe8b91c71ed98f49a4ed3635620e576d309ff961d5ee647410c77",
+    "bench/generated/public-api/@eac/ir/index.d.ts": "78adb6227cb73ae161b7dc354463e48af08579f34c8ddb647df01f460fd8e981",
+    "bench/generated/public-api/@eac/ir/types.d.ts": "fac8598d32d27155e0970959b007ef4962f0d390f28bae74c5ca4ad030b0c220",
+    "bench/generated/public-api/@eac/units/index.d.ts": "ff5ea7fe2d59ea20dbb1854342a39f848e394f461ec49ee198530daf3b091f04",
+    "bench/harness/fixtures/broken-experience/eac.config.mjs": "293ebad274518d74dd9209131d825a36e23e8bb08fe0e0d1e4b3b22c1bb1363c"
+  }
+}

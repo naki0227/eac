@@ -1,0 +1,17 @@
+{
+  "name": "@eac/benchmark-harness",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@eac/checker": "workspace:*",
+    "@eac/core": "workspace:*"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2"
+  }
+}

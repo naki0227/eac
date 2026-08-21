@@ -33,6 +33,19 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@24.13.3)
 
+  bench/harness:
+    dependencies:
+      '@eac/checker':
+        specifier: workspace:*
+        version: link:../../packages/checker
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+    devDependencies:
+      prettier:
+        specifier: ^3.6.2
+        version: 3.9.6
+
   examples/basic-motion:
     dependencies:
       '@eac/core':

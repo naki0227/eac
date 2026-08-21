@@ -1,0 +1,18 @@
+{
+  "functions": ["experience", "px", "sec", "ms", "deg", "rad", "depth", "opacity"],
+  "members": [
+    "scene",
+    "build",
+    "rect",
+    "circle",
+    "text",
+    "path",
+    "moveTo",
+    "rotateTo",
+    "fadeTo",
+    "depthTo",
+    "bringForward",
+    "dependsOn",
+    "unsupported"
+  ]
+}

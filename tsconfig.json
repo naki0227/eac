@@ -6,6 +6,7 @@
     { "path": "packages/core" },
     { "path": "packages/checker" },
     { "path": "packages/renderer-svg" },
-    { "path": "packages/cli" }
+    { "path": "packages/cli" },
+    { "path": "bench/harness" }
   ]
 }

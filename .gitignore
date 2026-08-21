@@ -7,3 +7,4 @@ frames/
 .DS_Store
 docs/TODO.md
 docs/reports/
+.bench-private/
