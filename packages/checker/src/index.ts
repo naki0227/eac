@@ -13,10 +13,20 @@ export type CheckResult = Readonly<{
   warnings: number;
 }>;
 
+const preventsHarness = (diagnostic: Diagnostic): boolean =>
+  diagnostic.severity === "error" &&
+  [
+    "eac::timeline::invalid-fps",
+    "eac::unit::invalid",
+    "eac::numeric::invalid",
+    "eac::numeric::invalid-opacity",
+    "eac::geometry::invalid",
+  ].includes(diagnostic.id);
+
 export function checkExperience(experience: ExperienceIR): CheckResult {
   const staticDiagnostics = runStaticRules(experience);
-  const hasStaticErrors = staticDiagnostics.some((item) => item.severity === "error");
-  const harness = hasStaticErrors
+  const hasUnsafeStaticErrors = staticDiagnostics.some(preventsHarness);
+  const harness = hasUnsafeStaticErrors
     ? {
         diagnostics: [],
         stats: {
@@ -42,7 +52,7 @@ export function checkExperience(experience: ExperienceIR): CheckResult {
 export function formatCheckResult(result: CheckResult): string {
   const harness =
     result.stats.frames === 0 && result.errors > 0
-      ? "Harness\n\n- skipped because static validation failed"
+      ? "Harness\n\n- skipped because static validation found unsafe runtime input"
       : `Harness\n\n✓ ${result.stats.frames} frames evaluated\n✓ ${result.stats.objects} objects\n✓ ${result.stats.timedProperties} timed properties\n${result.stats.invalidTransforms === 0 ? "✓ no invalid transforms" : `✗ ${result.stats.invalidTransforms} invalid transforms`}`;
   const diagnostics = result.diagnostics.map(formatDiagnostic).join("\n\n");
   return `${diagnostics ? `${diagnostics}\n\n` : ""}${harness}\n\n${result.errors} errors, ${result.warnings} warnings`;
