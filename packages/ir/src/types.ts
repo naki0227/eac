@@ -29,7 +29,42 @@ export type CycloidTrajectory = Readonly<{
   radius: Length;
   turns?: number;
 }>;
-export type Trajectory = LinearTrajectory | BezierTrajectory | CycloidTrajectory;
+export type MoveTrajectory = LinearTrajectory | BezierTrajectory | CycloidTrajectory;
+export type EllipseTrajectory = Readonly<{
+  kind: "ellipse";
+  center: Vec2;
+  radiusX: Length;
+  radiusY: Length;
+  rotation: Angle;
+  startAngle: Angle;
+  endAngle: Angle;
+}>;
+export type OrbitTrajectory = Readonly<{
+  kind: "orbit";
+  center: Vec2;
+  radius: Length;
+  startAngle: Angle;
+  turns: number;
+}>;
+export type SpiralTrajectory = Readonly<{
+  kind: "spiral";
+  center: Vec2;
+  startRadius: Length;
+  endRadius: Length;
+  turns: number;
+  startAngle: Angle;
+}>;
+export type WaveTrajectory = Readonly<{
+  kind: "wave";
+  start: Vec2;
+  end: Vec2;
+  amplitude: Length;
+  cycles: number;
+  phase: Angle;
+}>;
+export type PathTrajectory =
+  EllipseTrajectory | OrbitTrajectory | SpiralTrajectory | WaveTrajectory;
+export type Trajectory = MoveTrajectory | PathTrajectory;
 
 export type MotionSegment<T extends PropertyValue> = Readonly<{
   id: string;

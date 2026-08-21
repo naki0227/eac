@@ -84,6 +84,45 @@ export const apiDocs: readonly ApiDoc[] = [
     keywords: ["cycloid", "roll", "wheel", "curve", "path", "move along"],
   },
   {
+    name: "followPath",
+    summary: "Moves position along one absolute deterministic path writer.",
+    signature: "object.followPath(path, { at, duration, easing? })",
+    example:
+      "dot.followPath(trajectory.orbit({ center, radius: px(80) }), { at: sec(1), duration: sec(2) })",
+    keywords: ["follow", "path", "trajectory", "position", "orbit", "spiral", "wave"],
+  },
+  {
+    name: "ellipse",
+    summary:
+      "Creates an absolute elliptical arc with explicit center, radii, angles, and rotation.",
+    signature:
+      "trajectory.ellipse({ center, radiusX, radiusY, rotation?, startAngle?, endAngle? })",
+    example:
+      "trajectory.ellipse({ center, radiusX: px(120), radiusY: px(60), startAngle: deg(0), endAngle: deg(180) })",
+    keywords: ["ellipse", "arc", "path", "trajectory", "follow"],
+  },
+  {
+    name: "orbit",
+    summary: "Creates a circular absolute orbit with a start angle and positive turn count.",
+    signature: "trajectory.orbit({ center, radius, startAngle?, turns? })",
+    example: "trajectory.orbit({ center, radius: px(100), turns: 2 })",
+    keywords: ["orbit", "circle", "path", "trajectory", "follow"],
+  },
+  {
+    name: "spiral",
+    summary: "Creates an absolute spiral by interpolating radius and angle.",
+    signature: "trajectory.spiral({ center, startRadius, endRadius, turns?, startAngle? })",
+    example: "trajectory.spiral({ center, startRadius: px(10), endRadius: px(120), turns: 2 })",
+    keywords: ["spiral", "radius", "path", "trajectory", "follow"],
+  },
+  {
+    name: "wave",
+    summary: "Creates a sine wave perpendicular to a non-degenerate start/end baseline.",
+    signature: "trajectory.wave({ start, end, amplitude, cycles?, phase? })",
+    example: "trajectory.wave({ start, end, amplitude: px(24), cycles: 3 })",
+    keywords: ["wave", "sine", "path", "trajectory", "follow"],
+  },
+  {
     name: "rotateTo",
     summary: "Rotates from the angle at `at` to a target angle.",
     signature: "object.rotateTo(angle, { at, duration })",
@@ -149,7 +188,8 @@ export const apiDocs: readonly ApiDoc[] = [
   },
 ];
 
-const tokenize = (value: string): string[] => value.toLowerCase().match(/[a-z0-9]+/g) ?? [];
+const tokenize = (value: string): string[] =>
+  (value.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((token) => token.length > 1);
 
 export function searchDocs(query: string): readonly ApiDoc[] {
   const tokens = tokenize(query);

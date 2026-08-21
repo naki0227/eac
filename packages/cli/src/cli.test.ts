@@ -20,6 +20,7 @@ describe("agent-facing CLI", () => {
         .slice(0, 2),
     ).toEqual(["cycloid", "moveTo"]);
     expect(searchDocs("move along a cycloid")).toEqual(searchDocs("move along a cycloid"));
+    expect(searchDocs("follow a spiral path")[0]?.name).toBe("spiral");
   });
 
   it("returns an actionable error for an unknown API", async () => {

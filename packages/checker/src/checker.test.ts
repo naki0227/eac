@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { easing, experience, opacity, px, sec } from "@eac/core";
+import { deg, easing, experience, opacity, px, sec, trajectory } from "@eac/core";
 import type { ExperienceIR } from "@eac/ir";
 import { checkExperience, formatCheckResult } from "./index.js";
 
@@ -195,5 +195,21 @@ describe("checker", () => {
     expect(checkExperience(malformed).diagnostics.map((item) => item.id)).toEqual(
       expect.arrayContaining(["eac::transform::invalid-scale", "eac::motion::invalid-easing"]),
     );
+  });
+
+  it("treats followPath as one position writer and keeps rotation independent", () => {
+    const project = experience({ name: "path", width: px(200), height: px(200), duration: sec(2) });
+    const dot = project
+      .scene("main")
+      .circle("dot", { position: { x: px(0), y: px(0) }, radius: px(4), fill: "red" });
+    dot
+      .followPath(trajectory.orbit({ center: { x: px(100), y: px(100) }, radius: px(20) }), {
+        at: sec(0),
+        duration: sec(2),
+      })
+      .moveTo({ x: px(10), y: px(10) }, { at: sec(1), duration: sec(0.5) })
+      .rotateTo(deg(180), { at: sec(0), duration: sec(2) });
+
+    expect(ids(project).filter((id) => id === "eac::motion::conflicting-writers")).toHaveLength(1);
   });
 });

@@ -5,10 +5,10 @@ import {
   type PropertyName,
   type PropertyValue,
   type TimedProperty,
-  type Trajectory,
 } from "@eac/ir";
-import { isUnit, type UnitKind } from "@eac/units";
+import { isUnit, type UnitKind, type UnitValue } from "@eac/units";
 import { error, type Diagnostic } from "./diagnostic.js";
+import { isValidTrajectory } from "./trajectory-rules.js";
 
 const propertyKinds: Readonly<Record<PropertyName, UnitKind | "vec2" | "scale">> = {
   position: "vec2",
@@ -18,8 +18,16 @@ const propertyKinds: Readonly<Record<PropertyName, UnitKind | "vec2" | "scale">>
   depth: "depth",
 };
 
-function isFiniteUnit(value: unknown, kind: UnitKind): boolean {
+function isFiniteUnit<K extends UnitKind>(value: unknown, kind: K): value is UnitValue<K> {
   return isUnit(value, kind) && Number.isFinite(value.value);
+}
+
+function isFiniteVector(
+  value: unknown,
+): value is Readonly<{ x: UnitValue<"length">; y: UnitValue<"length"> }> {
+  if (typeof value !== "object" || value === null) return false;
+  const vector = value as { x?: unknown; y?: unknown };
+  return isFiniteUnit(vector.x, "length") && isFiniteUnit(vector.y, "length");
 }
 
 function validValue(value: unknown, kind: UnitKind | "vec2" | "scale"): boolean {
@@ -35,36 +43,7 @@ function validValue(value: unknown, kind: UnitKind | "vec2" | "scale"): boolean 
     );
   }
   if (kind !== "vec2") return isFiniteUnit(value, kind);
-  if (typeof value !== "object" || value === null) return false;
-  const vector = value as { x?: unknown; y?: unknown };
-  return isFiniteUnit(vector.x, "length") && isFiniteUnit(vector.y, "length");
-}
-
-function validTrajectory(value: unknown): value is Trajectory {
-  if (typeof value !== "object" || value === null) return false;
-  const trajectory = value as {
-    kind?: unknown;
-    control1?: unknown;
-    control2?: unknown;
-    radius?: unknown;
-    turns?: unknown;
-  };
-  if (trajectory.kind === "linear") return true;
-  if (trajectory.kind === "bezier")
-    return validValue(trajectory.control1, "vec2") && validValue(trajectory.control2, "vec2");
-  if (trajectory.kind !== "cycloid") return false;
-  if (
-    !isUnit(trajectory.radius, "length") ||
-    !Number.isFinite(trajectory.radius.value) ||
-    trajectory.radius.value <= 0
-  )
-    return false;
-  return (
-    trajectory.turns === undefined ||
-    (typeof trajectory.turns === "number" &&
-      Number.isFinite(trajectory.turns) &&
-      trajectory.turns > 0)
-  );
+  return isFiniteVector(value);
 }
 
 function numericAndUnits(experience: ExperienceIR): Diagnostic[] {
@@ -230,16 +209,16 @@ function geometry(experience: ExperienceIR): Diagnostic[] {
         );
       for (const segment of object.properties.position.segments) {
         const trajectory: unknown = segment.trajectory;
-        if (trajectory !== undefined && !validTrajectory(trajectory))
+        if (trajectory !== undefined && !isValidTrajectory(trajectory))
           diagnostics.push(
             error(
               "eac::geometry::invalid",
               `Motion \`${segment.id}\` has an invalid trajectory.`,
               `${scene.id}.${object.id}.position`,
-              "A trajectory must be a linear, cubic Bézier, or cycloid object with valid geometry.",
+              "A trajectory must use finite, non-degenerate geometry and deterministic parameters.",
               [
                 'use { kind: "linear" } for linear motion',
-                "use eac docs bezier or eac docs cycloid for curved motion",
+                "use eac docs trajectory for supported curved paths",
               ],
             ),
           );

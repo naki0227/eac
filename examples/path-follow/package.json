@@ -1,0 +1,8 @@
+{
+  "name": "@eac/example-path-follow",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@eac/core": "workspace:*"
+  }
+}

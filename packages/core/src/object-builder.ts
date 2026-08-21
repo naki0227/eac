@@ -1,13 +1,16 @@
-import type {
-  AppearanceIR,
-  GeometryIR,
-  ObjectIR,
-  PropertyMap,
-  PropertyName,
-  Scale2,
-  Trajectory,
-  UnsupportedProperty,
-  Vec2,
+import {
+  evaluatePathTrajectory,
+  type AppearanceIR,
+  type GeometryIR,
+  type MoveTrajectory,
+  type ObjectIR,
+  type PathTrajectory,
+  type PropertyMap,
+  type PropertyName,
+  type Scale2,
+  type Trajectory,
+  type UnsupportedProperty,
+  type Vec2,
 } from "@eac/ir";
 import type { Angle, Depth, Opacity, Time } from "@eac/units";
 import {
@@ -19,7 +22,8 @@ import {
 } from "./motion-normalizer.js";
 
 type MutableObject = { -readonly [K in keyof ObjectIR]: ObjectIR[K] };
-export type MoveOptions = MotionOptions<Vec2> & Readonly<{ trajectory?: Trajectory }>;
+export type MoveOptions = MotionOptions<Vec2> & Readonly<{ trajectory?: MoveTrajectory }>;
+export type FollowPathOptions = RelativeMotionOptions;
 export type ScaleInput = number | Readonly<{ x: number; y: number }>;
 
 const scaleValue = (value: ScaleInput): Scale2 =>
@@ -83,6 +87,10 @@ export class ObjectBuilder {
 
   moveBy(delta: Vec2, options: RelativeMotionOptions): this {
     return this.#addMotion("position", delta, options, undefined, "relative");
+  }
+
+  followPath(path: PathTrajectory, options: FollowPathOptions): this {
+    return this.#addMotion("position", evaluatePathTrajectory(path, 1), options, path);
   }
 
   rotateTo(target: Angle, options: MotionOptions<Angle>): this {
