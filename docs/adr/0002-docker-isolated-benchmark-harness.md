@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted; the first main freeze was protocol-invalid and revision 2 is pending.
+Accepted; the first main freeze was protocol-invalid, revision 2 had a metric parser defect, and
+revision 3 is pending.
 
 ## Context
 

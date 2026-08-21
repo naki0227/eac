@@ -118,7 +118,7 @@ After implementation, fixtures, local validation, and CI are final:
 pnpm bench:smoke
 pnpm bench:preflight-auth
 pnpm bench:preflight-materials --model <exact-model-id> --reasoning <level>
-git tag -a benchmark-v0.1-main-r2 <final-sha> -m "Freeze EaC v0.1 main benchmark r2"
+git tag -a benchmark-v0.1-main-r3 <final-sha> -m "Freeze EaC v0.1 main benchmark r3"
 ```
 
 `run` and `run-all` refuse a missing tag, a checkout that differs from the tag, a dirty tree, stale

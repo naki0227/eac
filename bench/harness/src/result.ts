@@ -12,10 +12,22 @@ export function sourceLines(source: string): number {
 
 export function parseEvaluation(exitCode: number, stdout: string, stderr: string): Evaluation {
   const match = /(\d+) errors, (\d+) warnings\s*$/m.exec(stdout);
+  const errorHeaders = [...stdout.matchAll(/^error\[/gm)].length;
+  const warningHeaders = [...stdout.matchAll(/^warning\[/gm)].length;
   return {
     exitCode,
-    errors: match?.[1] === undefined ? null : Number.parseInt(match[1], 10),
-    warnings: match?.[2] === undefined ? null : Number.parseInt(match[2], 10),
+    errors:
+      errorHeaders > 0
+        ? errorHeaders
+        : match?.[1] === undefined
+          ? null
+          : Number.parseInt(match[1], 10),
+    warnings:
+      warningHeaders > 0
+        ? warningHeaders
+        : match?.[2] === undefined
+          ? null
+          : Number.parseInt(match[2], 10),
     stdout,
     stderr,
   };

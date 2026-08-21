@@ -21,7 +21,7 @@ export const materialDiscoveryMarker = resolve(privateRoot, "material-discovery.
 
 export const benchmark = Object.freeze({
   baseCommit: "ac440457ea8611da47593b560c6baf8a785a2019",
-  freezeTag: "benchmark-v0.1-main-r2",
+  freezeTag: "benchmark-v0.1-main-r3",
   seed: "eac-v0.1-main-benchmark-2026-08-21",
   cliVersion: "0.1.0",
   codexVersion: "0.149.0",
