@@ -26,7 +26,7 @@ export const benchmark = Object.freeze({
   agentSmokeImageA: "eac-benchmark-agent-a:smoke",
   agentSmokeImageBC: "eac-benchmark-agent-bc:smoke",
   evaluatorImage: "eac-benchmark-evaluator:0.1.0",
-  proxyAllowedHosts: ["api.openai.com"],
+  proxyAllowedHosts: ["api.openai.com", "auth.openai.com", "chatgpt.com"],
 });
 
 export const benchmarkAffectingPaths = Object.freeze([

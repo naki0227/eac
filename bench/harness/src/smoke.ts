@@ -34,12 +34,14 @@ async function commandCheck(
   command: string,
   expectedExit: number,
   includes?: string,
+  authFile?: string,
 ): Promise<SmokeCheck> {
   const result = await runLockedContainer({
     image,
     network,
     workspace,
     args: ["sh", "-lc", command],
+    ...(authFile === undefined ? {} : { authFile }),
   });
   const combined = `${result.stdout}${result.stderr}`;
   return requirePassed({
@@ -60,12 +62,14 @@ export async function runSmoke(): Promise<readonly SmokeCheck[]> {
   const workspaceB = resolve(root, "run-b");
   const workspaceC = resolve(root, "run-c");
   const previousWorkspace = resolve(root, "previous-run-not-mounted");
+  const fakeAuthFile = resolve(root, "auth.json");
   await Promise.all(
     [workspaceA, workspaceB, workspaceC, previousWorkspace].map((path) =>
       mkdir(path, { recursive: true }),
     ),
   );
   await writeFile(resolve(previousWorkspace, "previous-secret"), "must remain isolated");
+  await writeFile(fakeAuthFile, '{"test":"not-a-credential"}');
   await cp(
     resolve(harnessRoot, "fixtures/broken-experience/eac.config.mjs"),
     resolve(workspaceC, "eac.config.mjs"),
@@ -93,6 +97,18 @@ export async function runSmoke(): Promise<readonly SmokeCheck[]> {
       passed: true,
       detail: benchmark.codexVersion,
     });
+    checks.push(
+      await commandCheck(
+        "only the selected auth file is mounted read-only",
+        benchmark.agentSmokeImageA,
+        network,
+        workspaceA,
+        "test -r /run/eac-auth/auth.json && ! test -e /workspace/auth.json && ! sh -c 'echo changed > /run/eac-auth/auth.json'",
+        0,
+        undefined,
+        fakeAuthFile,
+      ),
+    );
     checks.push(
       await commandCheck(
         "Condition A cannot execute check",

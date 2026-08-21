@@ -1,11 +1,17 @@
 #!/usr/bin/env node
-import { mkdir, readFile } from "node:fs/promises";
+import { chmod, copyFile, mkdir, readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import console from "node:console";
 import process from "node:process";
 
 const prompt = await readFile("/materials/task.txt", "utf8");
 await mkdir("/tmp/agent-home/.codex", { recursive: true });
+try {
+  await copyFile("/run/eac-auth/auth.json", "/tmp/agent-home/.codex/auth.json");
+  await chmod("/tmp/agent-home/.codex/auth.json", 0o600);
+} catch (cause) {
+  if (cause?.code !== "ENOENT") throw cause;
+}
 const args = [
   "exec",
   "--ephemeral",

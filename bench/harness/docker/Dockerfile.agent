@@ -3,6 +3,7 @@ FROM node:22-bookworm-slim@sha256:d649c27dae7ba0137b3cef5dd75baa422c08dc3d9e3fc0
 ARG BENCHMARK_COMMIT=development
 LABEL org.opencontainers.image.revision=${BENCHMARK_COMMIT}
 RUN useradd --create-home --uid 10001 agent
+RUN mkdir -p /run/eac-auth
 WORKDIR /workspace
 ENV HOME=/tmp/agent-home
 

@@ -17,9 +17,11 @@ its own workspace mounted. Keep documentation/check execution in a separate capa
 enforces command policy. Perform final validation in a detached, networkless evaluator. Stage all
 results under ignored host-only storage until the experiment finishes.
 
-Real agents use an internal Docker network and a CONNECT proxy restricted to the Codex API host. The
-agent image is pinned to an explicit Codex CLI version, while all images carry the frozen repository
-revision as an OCI label.
+Real agents use an internal Docker network and a CONNECT proxy restricted to the required OpenAI
+service hosts. The agent runner prefers a narrowly mounted, file-based ChatGPT authentication cache;
+the entrypoint copies that cache into per-run tmpfs and never mounts the rest of the host Codex
+configuration. API-key authentication remains an optional fallback. The agent image is pinned to an
+explicit Codex CLI version, while all images carry the frozen repository revision as an OCI label.
 
 ## Alternatives considered
 
@@ -28,18 +30,22 @@ revision as an OCI label.
 - Copying compiled EaC packages into children: rejected because agents could inspect hidden runtime
   implementation and bypass CLI policy.
 - Kubernetes or a remote scheduler: rejected as unnecessary for fifteen local sequential runs.
+- Requiring an API key: rejected because local Codex supports ChatGPT subscription authentication,
+  and the benchmark does not inherently require usage-based API access.
 
 ## Benefits
 
 - Enforces filesystem, command, evaluator-output, and cross-run boundaries.
 - Keeps condition policy small and auditable.
 - Supports deterministic preparation, order, resumption, and raw result retention.
-- Avoids host repository/config mounts and committed secrets.
+- Avoids host repository/config-directory mounts and committed secrets.
 
 ## Costs and risks
 
 - Docker builds and sidecars add runtime and maintenance cost.
-- API endpoint changes require proxy allow-list updates and a new freeze.
+- OpenAI service endpoint changes require proxy allow-list updates and a new freeze.
+- File-based ChatGPT auth contains bearer credentials and must be handled like a password; Docker
+  host administrators remain able to inspect it while a run exists.
 - A malicious Docker host administrator remains outside the threat model.
 - Some transcript-derived metrics still require human audit.
 

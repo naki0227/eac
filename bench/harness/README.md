@@ -5,10 +5,14 @@ artifacts that its condition does not permit. The 15-run main experiment is not 
 
 ## Isolation architecture
 
-Each run uses a fresh, read-only-root Docker container. It receives exactly two bind mounts:
+Each run uses a fresh, read-only-root Docker container. It receives two task-data bind mounts:
 
 - its own writable `/workspace`;
 - generated README/type materials at read-only `/materials`.
+
+When ChatGPT authentication is selected, the host additionally mounts only the selected
+`auth.json` file read-only. The entrypoint copies it to the container's private tmpfs so Codex can
+refresh credentials without modifying the host cache. The rest of `~/.codex` is never mounted.
 
 The repository, `bench/results/`, host configuration, other run directories, and Docker socket are
 never mounted. Linux capabilities are dropped, privilege escalation is disabled, and memory/process
@@ -34,9 +38,11 @@ and still receives the same final evaluator pass.
 ## Network boundary
 
 Real Codex containers attach only to an internal Docker network. A dual-homed CONNECT proxy allows
-only `api.openai.com:443`; direct internet routes and GitHub are unavailable. Strict mode therefore
-supports `OPENAI_API_KEY` authentication only. Host Codex config directories are deliberately not
-mounted. If Codex changes required service hosts, update and re-freeze the allow-list before any run.
+only the pinned OpenAI service hosts (`api.openai.com`, `auth.openai.com`, and `chatgpt.com`) on port
+443; direct internet routes and GitHub are unavailable. ChatGPT authentication is the default:
+the harness uses `EAC_CODEX_AUTH_FILE` when set, otherwise `~/.codex/auth.json`. `OPENAI_API_KEY`
+remains an optional fallback when no file-based login exists. If Codex changes required service
+hosts, update and re-freeze the allow-list before any run.
 
 Local Docker administrators can inspect containers and secrets while a run exists. They must not do
 so during the experiment. This is a local isolation harness, not protection against a malicious host.
@@ -90,9 +96,13 @@ Changing any of them after tagging invalidates the experiment and requires a new
 ## Run one task
 
 ```bash
-OPENAI_API_KEY=... pnpm bench:run --condition A --task basic-timed-motion \
+pnpm bench:run --condition A --task basic-timed-motion \
   --model <exact-model-id> --reasoning <level>
 ```
+
+Run `codex login` once before the benchmark. If Codex stores credentials in the OS keychain, set
+`cli_auth_credentials_store = "file"`, log in again, and confirm `~/.codex/auth.json` exists. A
+separate file can be selected with `EAC_CODEX_AUTH_FILE=/path/to/auth.json`.
 
 One run creates a new container/network/workspace, preserves transcript/source/evaluation under
 `.bench-private/artifacts/<run-id>/`, writes one JSON record under `.bench-private/results/`, and then
@@ -103,7 +113,7 @@ existing results only when they form an exact prefix of its persisted seeded ord
 ## Run or resume all 15 tasks
 
 ```bash
-OPENAI_API_KEY=... pnpm bench:run-all --model <exact-model-id> --reasoning <level>
+pnpm bench:run-all --model <exact-model-id> --reasoning <level>
 ```
 
 The seeded order is persisted once at `.bench-private/run-order.json`. Completed condition/task pairs
@@ -124,7 +134,8 @@ silently counted.
 
 ## Known limitations
 
-- Strict network mode currently supports API-key Codex authentication, not a mounted ChatGPT session.
+- ChatGPT login requires a file-based Codex auth cache; an OS-keychain-only login cannot be mounted
+  into Docker.
 - Hallucinated/invalid API classification needs transcript review; candidate extraction is best effort.
 - Semantic satisfaction beyond checker validity is represented by agent completion plus evaluator
   success and may require later blinded audit.

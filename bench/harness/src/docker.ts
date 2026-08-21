@@ -172,6 +172,7 @@ export async function runLockedContainer(
     materials?: string;
     args: readonly string[];
     env?: readonly string[];
+    authFile?: string;
     timeoutMs?: number;
     name?: string;
   }>,
@@ -192,6 +193,8 @@ export async function runLockedContainer(
   if (options.name !== undefined) args.splice(2, 0, "--name", options.name);
   if (options.materials !== undefined)
     args.push("--mount", `type=bind,src=${options.materials},dst=/materials,readonly`);
+  if (options.authFile !== undefined)
+    args.push("--mount", `type=bind,src=${options.authFile},dst=/run/eac-auth/auth.json,readonly`);
   for (const environment of options.env ?? []) args.push("--env", environment);
   args.push(options.image, ...options.args);
   return runCommand("docker", args, {

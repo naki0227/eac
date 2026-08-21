@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { resolveCodexAuthentication } from "./auth.js";
 import { benchmark } from "./config.js";
 import {
   containerLogs,
@@ -20,10 +21,7 @@ const safeName = (prefix: string, runId: string): string =>
 
 export class CodexDockerAgentRunner implements AgentRunner {
   async run(input: AgentRunInput): Promise<AgentRunOutput> {
-    if (!process.env.OPENAI_API_KEY)
-      throw new Error(
-        "OPENAI_API_KEY is required; host Codex config mounts are intentionally unsupported.",
-      );
+    const authentication = await resolveCodexAuthentication();
     const network = safeName("eac-net", input.runId);
     const service = safeName("eac-service", input.runId);
     const proxy = safeName("eac-proxy", input.runId);
@@ -36,7 +34,7 @@ export class CodexDockerAgentRunner implements AgentRunner {
         await startCapabilityService(service, input.condition, network, input.workspace);
       await startEgressProxy(proxy, network);
       const environment = [
-        "OPENAI_API_KEY",
+        ...(authentication.kind === "api-key" ? ["OPENAI_API_KEY"] : []),
         "HTTPS_PROXY=http://eac-proxy:3128",
         "HTTP_PROXY=http://eac-proxy:3128",
         "NO_PROXY=eac-service,localhost,127.0.0.1",
@@ -53,6 +51,7 @@ export class CodexDockerAgentRunner implements AgentRunner {
         materials: input.materials,
         args: [],
         env: environment,
+        ...(authentication.kind === "chatgpt" ? { authFile: authentication.authFile } : {}),
         timeoutMs: input.timeoutMs,
         name: agent,
       });
