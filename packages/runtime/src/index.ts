@@ -7,3 +7,5 @@ export { runStep } from "./step-runner.js";
 export type { SemanticEvent, StepResult } from "./step-runner.js";
 export { initialReplayState } from "./state.js";
 export type { ReplayState, StateTransition } from "./state.js";
+export { LiveSession } from "./live.js";
+export type { LiveOptions } from "./live.js";

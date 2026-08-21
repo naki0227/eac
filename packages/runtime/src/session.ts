@@ -2,6 +2,7 @@ import {
   evaluateScene,
   type EvaluatedObject,
   type ExperienceIR,
+  type ScenarioEventIR,
   type ScenarioIR,
   type SceneIR,
 } from "@eac/ir";
@@ -35,8 +36,8 @@ const primaryScene = (experience: ExperienceIR): SceneIR | undefined => experien
  */
 export class ExperienceSession {
   readonly #experience: ExperienceIR;
-  readonly #scenario: ScenarioIR | undefined;
-  readonly #steps: readonly ReplayStep[];
+  #scenario: ScenarioIR | undefined;
+  #steps: readonly ReplayStep[];
   readonly #scene: SceneIR | undefined;
   readonly #checkpoints = new Map<number, ReplayResult>();
 
@@ -53,6 +54,37 @@ export class ExperienceSession {
 
   get scenario(): ScenarioIR | undefined {
     return this.#scenario;
+  }
+
+  /**
+   * Appends input events to the scenario this session replays. Live preview uses this to grow one
+   * scenario as the user interacts, so the same replay machinery serves live and offline evaluation.
+   * Checkpoints at or after the first inserted step are dropped; earlier ones stay valid because the
+   * steps below the insertion point are unchanged.
+   */
+  appendEvents(events: readonly ScenarioEventIR[]): void {
+    if (events.length === 0) return;
+    const base =
+      this.#scenario ??
+      ({
+        version: "0.3",
+        scenarioVersion: 1,
+        name: "live",
+        duration: this.#experience.duration,
+        events: [],
+        assertions: [],
+      } satisfies ScenarioIR);
+    this.#scenario = { ...base, events: [...base.events, ...events] };
+    const earliest = Math.min(...events.map((event) => event.at.value));
+    this.#steps = buildSteps(this.#experience, this.#scenario);
+    const firstAffected = this.#steps.findIndex((step) => step.time >= earliest);
+    for (const index of [...this.#checkpoints.keys()])
+      if (firstAffected >= 0 && index >= firstAffected) this.#checkpoints.delete(index);
+  }
+
+  /** Drops every cached checkpoint. Used by reset, and by tests proving the cache is optional. */
+  clearCache(): void {
+    this.#checkpoints.clear();
   }
 
   #initial(): ReplayResult {

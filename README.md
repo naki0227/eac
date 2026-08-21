@@ -22,7 +22,7 @@ The current release is [**v0.2**](docs/v0.2.md) — groups and nested transforms
 paths and `followPath`, composition helpers, typed sRGB colors and styles, local image assets, and
 timed audio. **v0.3 (in development)** adds the reactive model: a closed signal registry, an explicit
 expression IR, named state, event rules, deterministic hit-testing, and replayable input scenarios
-that can be checked, previewed, and rendered to video — see [`docs/spec/v0.3.md`](docs/spec/v0.3.md).
+that can be interacted with live, recorded, checked, and rendered to video — see [`docs/spec/v0.3.md`](docs/spec/v0.3.md).
 
 A secondary research question runs through all of it: whether a coding agent can learn an unfamiliar
 creative DSL from its CLI and converge on valid output through structured diagnostics.
@@ -102,14 +102,15 @@ Every example passes `eac check --ci` and exists to demonstrate one idea.
 
 ## Packages
 
-| Package             | Responsibility                                       |
-| ------------------- | ---------------------------------------------------- |
-| `@eac/units`        | Branded unit values and interpolation                |
-| `@eac/ir`           | Platform-neutral IR and seekable timed evaluation    |
-| `@eac/core`         | User DSL and IR construction                         |
-| `@eac/checker`      | Static rules, harness sampling, and AABB diagnostics |
-| `@eac/renderer-svg` | SVG, PNG, and MP4 rendering                          |
-| `@eac/cli`          | Self-describing agent-facing toolchain               |
+| Package             | Responsibility                                                |
+| ------------------- | ------------------------------------------------------------- |
+| `@eac/units`        | Branded unit values and interpolation                         |
+| `@eac/ir`           | Platform-neutral IR and seekable timed evaluation             |
+| `@eac/core`         | User DSL and IR construction                                  |
+| `@eac/checker`      | Static rules, harness sampling, and AABB diagnostics          |
+| `@eac/renderer-svg` | SVG, PNG, and MP4 rendering                                   |
+| `@eac/runtime`      | Deterministic reactive replay engine, shared with the browser |
+| `@eac/cli`          | Self-describing agent-facing toolchain                        |
 
 SVG-specific concepts stay out of the core IR. The renderer boundary is intentionally provisional
 until a second renderer exists.

@@ -112,10 +112,13 @@ describe("agent-facing CLI", () => {
       const preview = join(directory, "preview.html");
       expect(await runCli(["preview", project, "--scenario", trace, "--output", preview])).toBe(0);
       const html = await readFile(preview, "utf8");
-      expect(html).toContain("Replaying scenario replay");
+      // The page ships the shared runtime plus the IR as data; the mode label is set at runtime.
+      expect(html).toContain("EaCPreviewRuntime");
+      expect(html).toContain('"scenarioVersion":1');
       expect(html).toContain('id="record"');
       expect(html).toContain("Export scenario");
       expect(html).not.toContain("<script id=");
+      expect(html).not.toMatch(/<script[^>]+src=/);
     } finally {
       await rm(directory, { recursive: true, force: true });
     }

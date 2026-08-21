@@ -70,6 +70,8 @@ export type {
   ReactiveBindingIR,
   ReactiveExpr,
   ReactiveSceneIR,
+  ScenarioEventIR,
+  ScenarioEventPayload,
   ScenarioIR,
   SignalRef,
   SignalValue,
