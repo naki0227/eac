@@ -35,6 +35,12 @@ function stressProject() {
   return project.build();
 }
 
+/**
+ * Regression sanity check, not a published benchmark. It measures `evaluateScene` alone — IR
+ * property evaluation and world-transform composition — with no rasterization, SVG lowering, or
+ * encoding. The budget is deliberately loose so it catches an accidental per-frame sort or history
+ * replay rather than tracking machine speed.
+ */
 describe("performance sanity", () => {
   it("evaluates a 30-node, five-group, ten-second scene within a bounded budget", () => {
     const ir = stressProject();
