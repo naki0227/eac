@@ -6,8 +6,16 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { Worker } from "node:worker_threads";
-import { audioClipDuration, type AudioClipIR, type ExperienceIR } from "@eac/ir";
+import {
+  audioClipDuration,
+  type AudioClipIR,
+  type ExperienceIR,
+  type ReactiveOverrides,
+  type ScenarioIR,
+} from "@eac/ir";
+import { ExperienceSession } from "@eac/runtime";
 import { Resvg } from "@resvg/resvg-js";
+import { sec } from "@eac/units";
 import { renderSvg } from "./svg.js";
 
 const execFileAsync = promisify(execFile);
@@ -32,8 +40,8 @@ parentPort.on("message", async (task) => {
 const rasterWorkerUrl = new URL(`data:text/javascript,${encodeURIComponent(rasterWorkerSource)}`);
 
 type RasterResult = Readonly<{ frame: number; error?: string }>;
-export type RenderSequenceOptions = Readonly<{ concurrency?: number }>;
-export type EncodeMp4Options = Readonly<{ experience?: ExperienceIR }>;
+export type RenderSequenceOptions = Readonly<{ concurrency?: number; scenario?: ScenarioIR }>;
+export type EncodeMp4Options = Readonly<{ experience?: ExperienceIR; scenario?: ScenarioIR }>;
 type AudioInput = Readonly<{
   path: string;
   clip: AudioClipIR;
@@ -50,8 +58,14 @@ function isRasterResult(value: unknown): value is RasterResult {
   );
 }
 
-export function renderPng(experience: ExperienceIR, time: number): Uint8Array {
-  return new Resvg(renderSvg(experience, time), { fitTo: { mode: "original" } }).render().asPng();
+export function renderPng(
+  experience: ExperienceIR,
+  time: number,
+  overrides?: ReactiveOverrides,
+): Uint8Array {
+  return new Resvg(renderSvg(experience, time, overrides), { fitTo: { mode: "original" } })
+    .render()
+    .asPng();
 }
 
 export async function renderPngSequence(
@@ -66,6 +80,11 @@ export async function renderPngSequence(
   if (!Number.isInteger(requestedConcurrency) || requestedConcurrency <= 0)
     throw new RangeError("render concurrency must be a positive integer");
   const workerCount = Math.min(frames, requestedConcurrency);
+  // One session drives every frame, so rendering replays the scenario exactly once, in order.
+  const session =
+    options.scenario === undefined
+      ? undefined
+      : new ExperienceSession(experience, options.scenario);
   const workers = Array.from(
     { length: workerCount },
     () =>
@@ -95,9 +114,10 @@ export async function renderPngSequence(
       if (settled || nextFrame >= frames) return;
       const frame = nextFrame++;
       const name = `frame-${String(frame).padStart(digits, "0")}.png`;
+      const time = frame / experience.fps;
       worker.postMessage({
         frame,
-        svg: renderSvg(experience, frame / experience.fps),
+        svg: renderSvg(experience, time, session?.overridesAt(time)),
         output: join(directory, name),
       });
     };
@@ -176,13 +196,43 @@ export function buildEncodeArguments(
   ];
 }
 
+/**
+ * Timed clips plus every sound a replayed event triggered. A reactive sound becomes an ordinary
+ * clip with the timestamp of its triggering step, so the muxed audio replays as deterministically
+ * as the video.
+ */
+function triggeredClips(
+  experience: ExperienceIR,
+  scenario: ScenarioIR | undefined,
+): readonly Readonly<{ clip: AudioClipIR; sceneStart: number }>[] {
+  if (scenario === undefined) return [];
+  const session = new ExperienceSession(experience, scenario);
+  const played = session.replayTo(scenario.duration.value).state.sounds;
+  return experience.scenes.flatMap((scene) =>
+    played.flatMap(({ sound, at }) => {
+      const declared = scene.reactive.sounds.find((item) => item.id === sound);
+      if (declared === undefined) return [];
+      return [
+        {
+          clip: { ...declared, id: `${declared.id}@${at.toFixed(6)}`, start: sec(at) },
+          sceneStart: 0,
+        },
+      ];
+    }),
+  );
+}
+
 async function materializeAudio(
   experience: ExperienceIR,
   frameDirectory: string,
+  scenario?: ScenarioIR,
 ): Promise<readonly AudioInput[]> {
-  const entries = experience.scenes.flatMap((scene) =>
-    scene.audioClips.map((clip) => ({ clip, sceneStart: scene.start.value })),
-  );
+  const entries = [
+    ...experience.scenes.flatMap((scene) =>
+      scene.audioClips.map((clip) => ({ clip, sceneStart: scene.start.value })),
+    ),
+    ...triggeredClips(experience, scenario),
+  ];
   return Promise.all(
     entries.map(async ({ clip, sceneStart }, index) => {
       if (clip.asset.kind !== "embedded-audio")
@@ -203,10 +253,15 @@ export async function encodeMp4(
   output: string,
   options: EncodeMp4Options = {},
 ): Promise<void> {
+  const canvas = options.experience?.canvas;
+  if (canvas !== undefined && (canvas.width.value % 2 !== 0 || canvas.height.value % 2 !== 0))
+    throw new RangeError(
+      `H.264 requires even canvas dimensions; ${String(canvas.width.value)}x${String(canvas.height.value)} cannot be encoded. Adjust the experience width and height, or render a PNG sequence instead.`,
+    );
   const audio =
     options.experience === undefined
       ? []
-      : await materializeAudio(options.experience, frameDirectory);
+      : await materializeAudio(options.experience, frameDirectory, options.scenario);
   await execFileAsync(
     "ffmpeg",
     buildEncodeArguments(frameDirectory, fps, output, audio, options.experience?.duration.value),

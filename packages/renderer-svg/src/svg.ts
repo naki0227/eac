@@ -1,6 +1,7 @@
 import {
   compareSourcePaths,
   evaluateScene,
+  type ReactiveOverrides,
   type EvaluatedObject,
   type ColorIR,
   type ExperienceIR,
@@ -80,11 +81,19 @@ function renderObject(evaluated: EvaluatedObject, filterId: string): string {
   return `<g id="${escapeXml(object.id)}" transform="matrix(${transformed.map(number).join(" ")})" opacity="${number(opacity)}"${filter}>${geometry(evaluated)}</g>`;
 }
 
-export function renderSvg(experience: ExperienceIR, time: number): string {
+/**
+ * `overrides` carries the reactive output for this instant. The renderer never computes it: the
+ * replay session owns interaction semantics and the renderer only lowers evaluated leaves.
+ */
+export function renderSvg(
+  experience: ExperienceIR,
+  time: number,
+  overrides?: ReactiveOverrides,
+): string {
   const activeObjects = experience.scenes.flatMap((scene) => {
     if (time < scene.start.value || time > scene.start.value + scene.duration.value) return [];
     const localTime = time - scene.start.value;
-    return evaluateScene(scene, localTime).map((evaluated) => ({
+    return evaluateScene(scene, localTime, overrides).map((evaluated) => ({
       evaluated,
       sceneStart: scene.start.value,
     }));

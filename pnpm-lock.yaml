@@ -58,6 +58,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
 
+  examples/click-toggle:
+    dependencies:
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/cycloid-depth:
     dependencies:
       '@eac/core':
@@ -70,13 +76,43 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
 
+  examples/hover-card:
+    dependencies:
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/image-card:
     dependencies:
       '@eac/core':
         specifier: workspace:*
         version: link:../../packages/core
 
+  examples/interactive-showcase:
+    dependencies:
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
+  examples/keyboard-control:
+    dependencies:
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/path-follow:
+    dependencies:
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
+  examples/scenario-replay:
+    dependencies:
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
+  examples/scroll-header:
     dependencies:
       '@eac/core':
         specifier: workspace:*
@@ -130,6 +166,9 @@ importers:
       '@eac/renderer-svg':
         specifier: workspace:*
         version: link:../renderer-svg
+      '@eac/runtime':
+        specifier: workspace:*
+        version: link:../runtime
       prettier:
         specifier: ^3.6.2
         version: 3.9.6
@@ -154,6 +193,12 @@ importers:
       '@eac/ir':
         specifier: workspace:*
         version: link:../ir
+      '@eac/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      '@eac/units':
+        specifier: workspace:*
+        version: link:../units
       '@resvg/resvg-js':
         specifier: ^2.6.2
         version: 2.6.2

@@ -15,7 +15,9 @@
   ],
   "dependencies": {
     "@eac/ir": "workspace:*",
-    "@resvg/resvg-js": "^2.6.2"
+    "@resvg/resvg-js": "^2.6.2",
+    "@eac/runtime": "workspace:*",
+    "@eac/units": "workspace:*"
   },
   "devDependencies": {
     "@eac/core": "workspace:*"

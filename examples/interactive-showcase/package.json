@@ -1,0 +1,8 @@
+{
+  "name": "@eac/example-interactive-showcase",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@eac/core": "workspace:*"
+  }
+}
