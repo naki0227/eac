@@ -33,10 +33,19 @@ describe("agent-facing CLI", () => {
     expect(error).toHaveBeenCalledWith(expect.stringContaining("docs search"));
   });
 
+  it("supports trajectory subtopics", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    expect(await runCli(["docs", "trajectory", "spiral"])).toBe(0);
+    expect(log.mock.calls.flat().join("\n")).toContain("trajectory.spiral");
+  });
+
   it("lists available APIs when docs has no topic", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     expect(await runCli(["docs"])).toBe(0);
-    expect(log.mock.calls.flat().join("\n")).toContain("moveTo");
+    const output = log.mock.calls.flat().join("\n");
+    expect(output).toContain("Motion:\n  moveTo");
+    expect(output).toContain("Assets:");
+    expect(output).toContain("Validation:");
   });
 
   it("formats a project without requiring an external formatter", async () => {

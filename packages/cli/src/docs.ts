@@ -1,4 +1,5 @@
 import { assetDocs } from "./asset-docs.js";
+import { v02Docs } from "./v02-docs.js";
 
 export type ApiDoc = Readonly<{
   name: string;
@@ -7,6 +8,16 @@ export type ApiDoc = Readonly<{
   example: string;
   keywords: readonly string[];
 }>;
+
+export type ApiCategory =
+  | "Primitives"
+  | "Motion"
+  | "Composition"
+  | "Trajectory"
+  | "Styling"
+  | "Assets"
+  | "Units"
+  | "Validation";
 
 const baseApiDocs: readonly ApiDoc[] = [
   {
@@ -265,31 +276,6 @@ const baseApiDocs: readonly ApiDoc[] = [
   },
 ];
 
-export const apiDocs: readonly ApiDoc[] = [...baseApiDocs, ...assetDocs];
+export const apiDocs: readonly ApiDoc[] = [...baseApiDocs, ...assetDocs, ...v02Docs];
 
-const tokenize = (value: string): string[] =>
-  (value.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((token) => token.length > 1);
-
-export function searchDocs(query: string): readonly ApiDoc[] {
-  const tokens = tokenize(query);
-  return apiDocs
-    .map((doc, index) => {
-      const name = doc.name.toLowerCase();
-      const haystack = [name, doc.summary, ...doc.keywords].join(" ").toLowerCase();
-      const score = tokens.reduce(
-        (total, token) =>
-          total +
-          (name === token ? 10 : name.includes(token) ? 5 : haystack.includes(token) ? 1 : 0),
-        0,
-      );
-      return { doc, score, index };
-    })
-    .filter((result) => result.score > 0)
-    .sort((a, b) => b.score - a.score || a.index - b.index)
-    .slice(0, 5)
-    .map((result) => result.doc);
-}
-
-export function formatApiDoc(doc: ApiDoc): string {
-  return `${doc.name}\n\n${doc.summary}\n\nSignature:\n${doc.signature}\n\nExample:\n${doc.example}`;
-}
+export { categorizeDocs, categoryForDoc, formatApiDoc, searchDocs } from "./doc-catalog.js";

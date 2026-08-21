@@ -8,6 +8,7 @@ import {
   type PropertyValue,
 } from "@eac/ir";
 import { error, type Diagnostic } from "./diagnostic.js";
+import { conflictTimeline } from "./timeline-visualization.js";
 import { runValueRules } from "./value-rules.js";
 
 function timeline(experience: ExperienceIR): Diagnostic[] {
@@ -74,6 +75,7 @@ function conflicts(experience: ExperienceIR): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   const checkProperty = (
     sceneId: string,
+    sceneDuration: number,
     nodeId: string,
     name: string,
     property: TimedProperty<PropertyValue>,
@@ -97,10 +99,7 @@ function conflicts(experience: ExperienceIR): Diagnostic[] {
               `${sceneId}.${nodeId}.${name}`,
               "EaC v0.2 allows only one writer per property for any point in time.",
               ["change one motion's at", "shorten one motion's duration"],
-              [
-                `${first.id}  ${first.start.value.toFixed(1)} ━━━ ${first.start.value + first.duration.value}s`,
-                `${second.id}  ${second.start.value.toFixed(1)} ━━━ ${second.start.value + second.duration.value}s`,
-              ],
+              conflictTimeline(`${sceneId}.${nodeId}.${name}`, first, second, sceneDuration),
             ),
           );
       }
@@ -108,10 +107,10 @@ function conflicts(experience: ExperienceIR): Diagnostic[] {
   for (const scene of experience.scenes)
     for (const { node } of walkNodes(scene.nodes)) {
       for (const name of Object.keys(node.properties) as PropertyName[])
-        checkProperty(scene.id, node.id, name, node.properties[name]);
+        checkProperty(scene.id, scene.duration.value, node.id, name, node.properties[name]);
       if (node.kind === "object")
         for (const [name, property] of stylePropertyEntries(node))
-          checkProperty(scene.id, node.id, name, property);
+          checkProperty(scene.id, scene.duration.value, node.id, name, property);
     }
   return diagnostics;
 }

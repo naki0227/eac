@@ -29,6 +29,15 @@ describe("checker", () => {
     expect(ids(project)).toEqual(
       expect.arrayContaining(["eac::motion::conflicting-writers", "eac::timeline::invalid-range"]),
     );
+    const conflict = checkExperience(project.build()).diagnostics.find(
+      (diagnostic) => diagnostic.id === "eac::motion::conflicting-writers",
+    );
+    expect(conflict?.details).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("position writer timeline"),
+        expect.stringContaining("conflict"),
+      ]),
+    );
   });
 
   it("rejects unsupported properties and cycles", () => {
