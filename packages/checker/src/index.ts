@@ -15,7 +15,21 @@ export type CheckResult = Readonly<{
 
 export function checkExperience(experience: ExperienceIR): CheckResult {
   const staticDiagnostics = runStaticRules(experience);
-  const harness = runHarness(experience);
+  const hasStaticErrors = staticDiagnostics.some((item) => item.severity === "error");
+  const harness = hasStaticErrors
+    ? {
+        diagnostics: [],
+        stats: {
+          frames: 0,
+          objects: experience.scenes.reduce((total, scene) => total + scene.objects.length, 0),
+          timedProperties: experience.scenes.reduce(
+            (total, scene) => total + scene.objects.length * 4,
+            0,
+          ),
+          invalidTransforms: 0,
+        },
+      }
+    : runHarness(experience);
   const diagnostics = [...staticDiagnostics, ...harness.diagnostics];
   return {
     diagnostics,
@@ -26,7 +40,10 @@ export function checkExperience(experience: ExperienceIR): CheckResult {
 }
 
 export function formatCheckResult(result: CheckResult): string {
-  const harness = `Harness\n\n✓ ${result.stats.frames} frames evaluated\n✓ ${result.stats.objects} objects\n✓ ${result.stats.timedProperties} timed properties\n${result.stats.invalidTransforms === 0 ? "✓ no invalid transforms" : `✗ ${result.stats.invalidTransforms} invalid transforms`}`;
+  const harness =
+    result.stats.frames === 0 && result.errors > 0
+      ? "Harness\n\n- skipped because static validation failed"
+      : `Harness\n\n✓ ${result.stats.frames} frames evaluated\n✓ ${result.stats.objects} objects\n✓ ${result.stats.timedProperties} timed properties\n${result.stats.invalidTransforms === 0 ? "✓ no invalid transforms" : `✗ ${result.stats.invalidTransforms} invalid transforms`}`;
   const diagnostics = result.diagnostics.map(formatDiagnostic).join("\n\n");
   return `${diagnostics ? `${diagnostics}\n\n` : ""}${harness}\n\n${result.errors} errors, ${result.warnings} warnings`;
 }

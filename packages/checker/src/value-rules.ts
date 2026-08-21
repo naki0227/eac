@@ -4,6 +4,7 @@ import type {
   PropertyName,
   PropertyValue,
   TimedProperty,
+  Trajectory,
 } from "@eac/ir";
 import { isUnit, type UnitKind } from "@eac/units";
 import { error, type Diagnostic } from "./diagnostic.js";
@@ -24,6 +25,33 @@ function validValue(value: unknown, kind: UnitKind | "vec2"): boolean {
   if (typeof value !== "object" || value === null) return false;
   const vector = value as { x?: unknown; y?: unknown };
   return isFiniteUnit(vector.x, "length") && isFiniteUnit(vector.y, "length");
+}
+
+function validTrajectory(value: unknown): value is Trajectory {
+  if (typeof value !== "object" || value === null) return false;
+  const trajectory = value as {
+    kind?: unknown;
+    control1?: unknown;
+    control2?: unknown;
+    radius?: unknown;
+    turns?: unknown;
+  };
+  if (trajectory.kind === "linear") return true;
+  if (trajectory.kind === "bezier")
+    return validValue(trajectory.control1, "vec2") && validValue(trajectory.control2, "vec2");
+  if (trajectory.kind !== "cycloid") return false;
+  if (
+    !isUnit(trajectory.radius, "length") ||
+    !Number.isFinite(trajectory.radius.value) ||
+    trajectory.radius.value <= 0
+  )
+    return false;
+  return (
+    trajectory.turns === undefined ||
+    (typeof trajectory.turns === "number" &&
+      Number.isFinite(trajectory.turns) &&
+      trajectory.turns > 0)
+  );
 }
 
 function numericAndUnits(experience: ExperienceIR): Diagnostic[] {
@@ -157,24 +185,18 @@ function geometry(experience: ExperienceIR): Diagnostic[] {
           ),
         );
       for (const segment of object.properties.position.segments) {
-        const trajectory = segment.trajectory;
-        const invalidTrajectory =
-          (trajectory?.kind === "bezier" &&
-            (!validValue(trajectory.control1, "vec2") ||
-              !validValue(trajectory.control2, "vec2"))) ||
-          (trajectory?.kind === "cycloid" &&
-            (!isFiniteUnit(trajectory.radius, "length") ||
-              trajectory.radius.value <= 0 ||
-              (trajectory.turns !== undefined &&
-                (!Number.isFinite(trajectory.turns) || trajectory.turns <= 0))));
-        if (invalidTrajectory)
+        const trajectory: unknown = segment.trajectory;
+        if (trajectory !== undefined && !validTrajectory(trajectory))
           diagnostics.push(
             error(
               "eac::geometry::invalid",
-              `Motion \`${segment.id}\` has an invalid ${trajectory.kind} trajectory.`,
+              `Motion \`${segment.id}\` has an invalid trajectory.`,
               `${scene.id}.${object.id}.position`,
-              "Trajectories require finite geometry and positive cycloid radius and turns.",
-              ["provide finite Bézier control points", "use a positive cycloid radius and turns"],
+              "A trajectory must be a linear, cubic Bézier, or cycloid object with valid geometry.",
+              [
+                'use { kind: "linear" } for linear motion',
+                "use eac docs bezier or eac docs cycloid for curved motion",
+              ],
             ),
           );
       }

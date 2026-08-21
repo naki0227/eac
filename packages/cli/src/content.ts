@@ -20,7 +20,10 @@ If you are unsure which API to use:
   eac docs search "<what you want to do>"
 
 For an API:
-  eac docs <api>`;
+  eac docs <api>
+
+To format a project after a check diagnostic:
+  eac format <project>`;
 
 export const guide = `HOW TO BUILD WITH EAC
 

@@ -21,6 +21,15 @@ async function formatIsValid(path: string): Promise<boolean> {
   return prettier.check(source, { filepath: path });
 }
 
+async function formatProject(args: readonly string[]): Promise<number> {
+  const project = await findProject(projectArgument(args));
+  const source = await readFile(project, "utf8");
+  const formatted = await prettier.format(source, { filepath: project });
+  if (source !== formatted) await writeFile(project, formatted);
+  console.log(`${source === formatted ? "Already formatted" : "Formatted"} ${project}`);
+  return 0;
+}
+
 async function init(): Promise<number> {
   const target = resolve("eac.config.mjs");
   const template = `import { experience, px, sec } from "@eac/core";\n\nconst project = experience({ name: "my-experience", width: px(1280), height: px(720), duration: sec(5) });\nconst scene = project.scene("main");\nscene.circle("dot", { position: { x: px(100), y: px(360) }, radius: px(24), fill: "#7c3aed" });\n\nexport default project;\n`;
@@ -42,13 +51,14 @@ async function inspect(args: readonly string[]): Promise<number> {
 async function check(args: readonly string[]): Promise<number> {
   const project = await findProject(projectArgument(args));
   const experience = await loadProject(project);
-  if (!(await formatIsValid(project)))
+  const formatted = await formatIsValid(project);
+  if (!formatted)
     console.log(
-      `error[eac::format::required]\n\n${project} is not formatted.\n\nWhy:\nConsistent source formatting makes agent edits and reviews deterministic.\n\nPossible fixes:\n- run Prettier on the project file\n`,
+      `error[eac::format::required]\n\n${project} is not formatted.\n\nWhy:\nConsistent source formatting makes agent edits and reviews deterministic.\n\nPossible fixes:\n- run eac format ${JSON.stringify(project)}\n`,
     );
   const result = checkExperience(experience);
   console.log(formatCheckResult(result));
-  return result.errors === 0 && (await formatIsValid(project)) ? 0 : 1;
+  return result.errors === 0 && formatted ? 0 : 1;
 }
 
 async function preview(args: readonly string[]): Promise<number> {
@@ -103,6 +113,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
     return 0;
   }
   if (command === "init") return init();
+  if (command === "format") return formatProject(rest);
   if (command === "docs") {
     if (rest[0] === "search") {
       const query = rest.slice(1).join(" ");
@@ -114,11 +125,16 @@ export async function runCli(args: readonly string[]): Promise<number> {
       );
       return results.length ? 0 : 1;
     }
-    const doc = apiDocs.find((item) => item.name.toLowerCase() === rest[0]?.toLowerCase());
-    if (!doc) {
-      console.error(
-        `Unknown API \`${rest[0] ?? ""}\`. Run eac docs search "<what you want to do>".`,
+    if (rest[0] === undefined) {
+      console.log(
+        `Available APIs:\n\n${apiDocs.map((doc) => `${doc.name} — ${doc.summary}`).join("\n")}\n\nFor details:\neac docs <api>`,
       );
+      return 0;
+    }
+    const topic = rest[0];
+    const doc = apiDocs.find((item) => item.name.toLowerCase() === topic.toLowerCase());
+    if (!doc) {
+      console.error(`Unknown API \`${topic}\`. Run eac docs search "<what you want to do>".`);
       return 1;
     }
     console.log(formatApiDoc(doc));

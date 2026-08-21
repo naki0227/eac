@@ -130,10 +130,7 @@ describe("checker", () => {
                   segments: [
                     {
                       ...object?.properties.position.segments[0],
-                      trajectory: {
-                        kind: "cycloid",
-                        radius: { kind: "length", value: -1 },
-                      },
+                      trajectory: "easeInOut",
                     },
                   ],
                 },
