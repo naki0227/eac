@@ -11,6 +11,7 @@ export declare class ObjectBuilder extends TransformBuilder<ObjectIR> {
     appearance: AppearanceIR,
     properties: PropertyMap,
     sourceOrder: number,
+    interactive?: boolean,
   );
   colorTo(target: ColorInput, options: MotionOptions<ColorIR>): this;
   strokeColorTo(target: ColorInput, options: MotionOptions<ColorIR>): this;

@@ -13,15 +13,19 @@ for building deterministic, seekable, and verifiable animated experiences in Typ
 code → IR → checker → deterministic evaluation → preview / frame / video
 ```
 
-Every property is a `TimedProperty`: directly evaluable at any time `t`, with exactly one writer per
-property per instant. Nothing replays from frame zero, nothing reads a clock, and a scene that would
-render ambiguously is a checker error rather than a surprise in the output.
+Properties are explicit: a `TimedProperty` is directly evaluable at any time `t`, and a
+`ReactiveProperty` is deterministically replayable from an explicit input scenario. Exactly one
+writer owns a property at a time, nothing reads a clock, and a scene that would render ambiguously
+is a checker error rather than a surprise in the output.
 
 The current release is [**v0.2**](docs/v0.2.md) — groups and nested transforms, deterministic motion
-paths and `followPath`, `sequence`/`parallel`/`delay`/`stagger` composition, typed sRGB colors and
-styles, local image assets, timed audio, and an agent-facing CLI built around a check-and-repair
-loop. Its secondary research question is whether a coding agent can learn an unfamiliar creative DSL
-from that CLI and converge on valid output through structured diagnostics.
+paths and `followPath`, composition helpers, typed sRGB colors and styles, local image assets, and
+timed audio. **v0.3 (in development)** adds the reactive model: a closed signal registry, an explicit
+expression IR, named state, event rules, deterministic hit-testing, and replayable input scenarios
+that can be interacted with live, recorded, checked, and rendered to video — see [`docs/spec/v0.3.md`](docs/spec/v0.3.md).
+
+A secondary research question runs through all of it: whether a coding agent can learn an unfamiliar
+creative DSL from its CLI and converge on valid output through structured diagnostics.
 
 ## Quick start
 
@@ -98,14 +102,15 @@ Every example passes `eac check --ci` and exists to demonstrate one idea.
 
 ## Packages
 
-| Package             | Responsibility                                       |
-| ------------------- | ---------------------------------------------------- |
-| `@eac/units`        | Branded unit values and interpolation                |
-| `@eac/ir`           | Platform-neutral IR and seekable timed evaluation    |
-| `@eac/core`         | User DSL and IR construction                         |
-| `@eac/checker`      | Static rules, harness sampling, and AABB diagnostics |
-| `@eac/renderer-svg` | SVG, PNG, and MP4 rendering                          |
-| `@eac/cli`          | Self-describing agent-facing toolchain               |
+| Package             | Responsibility                                                |
+| ------------------- | ------------------------------------------------------------- |
+| `@eac/units`        | Branded unit values and interpolation                         |
+| `@eac/ir`           | Platform-neutral IR and seekable timed evaluation             |
+| `@eac/core`         | User DSL and IR construction                                  |
+| `@eac/checker`      | Static rules, harness sampling, and AABB diagnostics          |
+| `@eac/renderer-svg` | SVG, PNG, and MP4 rendering                                   |
+| `@eac/runtime`      | Deterministic reactive replay engine, shared with the browser |
+| `@eac/cli`          | Self-describing agent-facing toolchain                        |
 
 SVG-specific concepts stay out of the core IR. The renderer boundary is intentionally provisional
 until a second renderer exists.

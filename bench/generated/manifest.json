@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cliVersion": "0.1.0",
   "files": {
-    "bench/generated/README.md": "6f14b96dbf3033b717052632a34fb51f64b99d63393a0b1c6c9f4d3d0a0065fe",
-    "bench/generated/cli.json": "e57fa4ea4d6ce11dbc1d9f2cf13b6c4cc4ac9bc9db86a4c7005c247ff2887820",
+    "bench/generated/README.md": "6749626bd4f36d43135965a0ae290bf00014cb2a068c93d06a03fc377ecabdea",
+    "bench/generated/cli.json": "3a4d3baa8f2fc88184b8074b75b1340d23369cd9e5c6563ff6f575200a14d39d",
     "bench/generated/public-api-names.json": "42a0870d0d18bbc8d18df53a3adb940883e432cd83676ac0d6c24d8f8736fe57",
-    "bench/generated/public-api/@eac/core/builders.d.ts": "4d2d6cd7684bb52354729d1fb7628e2052e81ed3ee1cdb5069e66856bd658a3b",
-    "bench/generated/public-api/@eac/core/index.d.ts": "a90c1f3469268d48b4c24e90884e11a3f2c6fa7747c58779e15ace8ad84bd3cf",
-    "bench/generated/public-api/@eac/core/object-builder.d.ts": "af670d3f2d5432a13ccd939dd5ee15e2739e2a01fce113173b728de8811b645d",
+    "bench/generated/public-api/@eac/core/builders.d.ts": "a603ca8e94d31ec698eb09ffc5e78585ae9701f39939bcca4aaa2b7c3dc06031",
+    "bench/generated/public-api/@eac/core/index.d.ts": "28ffcf34d7c302469e755efa399d5c05ce53c7bed1eb0c254abeec00c307dfef",
+    "bench/generated/public-api/@eac/core/object-builder.d.ts": "32bbe193169dff8a2b6fd512206e500f4a2927bb241a4c315f114f25deb81aa3",
     "bench/generated/public-api/@eac/ir/evaluate.d.ts": "ced98908b5eacef8e91ade691600b206d5cd7cc1b361bb7335fc698f29af1453",
-    "bench/generated/public-api/@eac/ir/index.d.ts": "f3fceebcd974d4932b33818e28235b0272b14550620784e93c4bce8f53adb98a",
-    "bench/generated/public-api/@eac/ir/types.d.ts": "96194661de7550a1e112dd021f4ba904d28c75d7b6ee522f41ae7e56406da9cb",
+    "bench/generated/public-api/@eac/ir/index.d.ts": "4e9b1c38f52c47837885e402b9fa1362d643e8fe7c520b936c3b849df3310d50",
+    "bench/generated/public-api/@eac/ir/types.d.ts": "a52fd8829578878203261ef428a51be807b4a9649936f238772026aa2c169428",
     "bench/generated/public-api/@eac/units/index.d.ts": "ff5ea7fe2d59ea20dbb1854342a39f848e394f461ec49ee198530daf3b091f04",
     "bench/harness/fixtures/broken-experience/eac.config.mjs": "293ebad274518d74dd9209131d825a36e23e8bb08fe0e0d1e4b3b22c1bb1363c"
   }

@@ -9,6 +9,7 @@ import { type Length, type Time } from "@eac/units";
 import { GroupBuilder } from "./group-builder.js";
 import { type ImageStyle, type ObjectStyle, type TransformStyle } from "./node-factory.js";
 import { ObjectBuilder } from "./object-builder.js";
+import { ReactiveScene } from "./reactive-scene.js";
 export type AudioOptions = Readonly<{
   id?: string;
   at?: Time;
@@ -23,6 +24,7 @@ export type AudioOptions = Readonly<{
 }>;
 export declare class SceneBuilder {
   #private;
+  readonly reactive: ReactiveScene;
   constructor(
     id: string,
     options: Readonly<{
@@ -31,6 +33,11 @@ export declare class SceneBuilder {
     }>,
   );
   get ir(): SceneIR;
+  state(name: string, initial: boolean): ReturnType<ReactiveScene["booleanState"]>;
+  state(name: string, initial: number): ReturnType<ReactiveScene["numberState"]>;
+  bind(...args: Parameters<ReactiveScene["bind"]>): this;
+  on(...args: Parameters<ReactiveScene["on"]>): this;
+  sound(...args: Parameters<ReactiveScene["sound"]>): ReturnType<ReactiveScene["sound"]>;
   rect(
     id: string,
     options: ObjectStyle &
