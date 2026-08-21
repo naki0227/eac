@@ -70,7 +70,44 @@ describe("PNG sequence renderer", () => {
     expect(filter).toContain("afade=t=in:st=0:d=0.1");
     expect(filter).toContain("afade=t=out:st=0.8:d=0.2");
     expect(filter).toContain("adelay=1500:all=1");
-    expect(filter).toContain("amix=inputs=1");
+    expect(filter).toContain("amix=inputs=1:normalize=0");
     expect(args).toEqual(expect.arrayContaining(["-map", "[eac-audio]", "-c:a", "aac"]));
+  });
+});
+
+describe("multi-clip audio mixing", () => {
+  const clip = (id: string, start: number): AudioClipIR => ({
+    id,
+    asset: {
+      kind: "embedded-audio",
+      path: `${id}.wav`,
+      mimeType: "audio/wav",
+      data: "UklGRg==",
+      duration: sec(5),
+    },
+    start: sec(start),
+    duration: sec(1),
+    trimStart: sec(0),
+    volume: 0.5,
+    fadeIn: sec(0),
+    fadeOut: sec(0),
+  });
+
+  it("keeps each clip at its authored volume when several clips are mixed", () => {
+    const args = buildEncodeArguments(
+      "/frames",
+      30,
+      "/output.mp4",
+      [
+        { path: "/a.wav", clip: clip("a", 0), start: 0, duration: 1 },
+        { path: "/b.wav", clip: clip("b", 2), start: 2, duration: 1 },
+      ],
+      4,
+    );
+    const filter = args[args.indexOf("-filter_complex") + 1];
+
+    expect(filter).toContain("amix=inputs=2:normalize=0");
+    expect(filter).toContain("volume=0.5,adelay=0:all=1[eac-audio-0]");
+    expect(filter).toContain("volume=0.5,adelay=2000:all=1[eac-audio-1]");
   });
 });

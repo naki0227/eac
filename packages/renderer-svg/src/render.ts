@@ -150,8 +150,10 @@ export function buildEncodeArguments(
     ];
     return `[${index + 1}:a]${filters.join(",")}[eac-audio-${index}]`;
   });
+  // `normalize=0` keeps each clip at its authored volume; amix would otherwise divide every
+  // input by the clip count, so adding a second clip would silently quieten the first.
   const mixInputs = audio.map((_, index) => `[eac-audio-${index}]`).join("");
-  const mix = `${mixInputs}amix=inputs=${audio.length}:duration=longest:dropout_transition=0,apad=whole_dur=${ffmpegNumber(totalDuration)},atrim=duration=${ffmpegNumber(totalDuration)}[eac-audio]`;
+  const mix = `${mixInputs}amix=inputs=${audio.length}:normalize=0:duration=longest:dropout_transition=0,apad=whole_dur=${ffmpegNumber(totalDuration)},atrim=duration=${ffmpegNumber(totalDuration)}[eac-audio]`;
   return [
     ...base,
     ...inputs,
