@@ -14,12 +14,22 @@ export function signalKey(ref: SignalRef): string {
   return `${ref.kind}.${ref.channel}`;
 }
 
-/** Every signal reference an expression reads, in stable first-seen order. */
+/**
+ * Every signal reference an expression reads, in stable first-seen order.
+ *
+ * Raw IR can contain a self-referential expression graph, so every traversal in this module tracks
+ * the active path and stops rather than recursing without end. The checker reports the cycle; these
+ * functions stay total so no consumer can crash on one.
+ */
 export function expressionSignals(expression: ReactiveExpr): readonly SignalRef[] {
   const found: SignalRef[] = [];
   const seen = new Set<string>();
+  const active = new Set<ReactiveExpr>();
   const visit = (node: ReactiveExpr): void => {
+    if (active.has(node)) return;
+    active.add(node);
     if (node.kind === "signal") {
+      active.delete(node);
       const key = signalKey(node.ref);
       if (!seen.has(key)) {
         seen.add(key);
@@ -28,6 +38,7 @@ export function expressionSignals(expression: ReactiveExpr): readonly SignalRef[
       return;
     }
     for (const child of expressionChildren(node)) visit(child);
+    active.delete(node);
   };
   visit(expression);
   return found;
@@ -56,8 +67,11 @@ const fail = (detail: string): TypeResult => ({ ok: false, detail });
 export function typeOfExpression(
   expression: ReactiveExpr,
   signalKind: (ref: SignalRef) => SignalValueKind | undefined,
+  active: ReadonlySet<ReactiveExpr> = new Set(),
 ): TypeResult {
-  const child = (node: ReactiveExpr): TypeResult => typeOfExpression(node, signalKind);
+  if (active.has(expression)) return fail("expression refers to itself");
+  const path = new Set([...active, expression]);
+  const child = (node: ReactiveExpr): TypeResult => typeOfExpression(node, signalKind, path);
   const expect = (node: ReactiveExpr, kind: SignalValueKind, label: string): string | undefined => {
     const result = child(node);
     if (!result.ok) return result.detail;
@@ -133,8 +147,14 @@ const asBoolean = (value: SignalValue): boolean => value === true;
  * Evaluation is total: an unreadable signal resolves to its type's zero value rather than throwing,
  * because the checker has already reported the reference and rendering must not crash.
  */
-export function evaluateExpression(expression: ReactiveExpr, read: SignalReader): SignalValue {
-  const value = (node: ReactiveExpr): SignalValue => evaluateExpression(node, read);
+export function evaluateExpression(
+  expression: ReactiveExpr,
+  read: SignalReader,
+  active: ReadonlySet<ReactiveExpr> = new Set(),
+): SignalValue {
+  if (active.has(expression)) return 0;
+  const path = new Set([...active, expression]);
+  const value = (node: ReactiveExpr): SignalValue => evaluateExpression(node, read, path);
   const number = (node: ReactiveExpr): number => asNumber(value(node));
   const boolean = (node: ReactiveExpr): boolean => asBoolean(value(node));
 

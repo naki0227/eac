@@ -105,6 +105,9 @@ importers:
       '@eac/ir':
         specifier: workspace:*
         version: link:../ir
+      '@eac/runtime':
+        specifier: workspace:*
+        version: link:../runtime
       '@eac/units':
         specifier: workspace:*
         version: link:../units
