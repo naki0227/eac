@@ -14,7 +14,7 @@ const isExperience = (value: unknown): value is ExperienceIR =>
   typeof value === "object" &&
   value !== null &&
   "version" in value &&
-  (value as { version?: unknown }).version === "0.1" &&
+  (value as { version?: unknown }).version === "0.2" &&
   "scenes" in value;
 
 export async function findProject(explicit?: string): Promise<string> {
@@ -34,7 +34,7 @@ export async function findProject(explicit?: string): Promise<string> {
 export async function loadProject(path: string): Promise<ExperienceIR> {
   if (path.endsWith(".json")) {
     const parsed: unknown = JSON.parse(await readFile(path, "utf8"));
-    if (!isExperience(parsed)) throw new TypeError("JSON does not contain EaC v0.1 IR.");
+    if (!isExperience(parsed)) throw new TypeError("JSON does not contain EaC v0.2 IR.");
     return parsed;
   }
   const module: unknown = await import(`${pathToFileURL(path).href}?t=${Date.now()}`);

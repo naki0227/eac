@@ -1,8 +1,22 @@
 import type { Angle, Depth, Length, Opacity, Time } from "@eac/units";
 
 export type Vec2 = Readonly<{ x: Length; y: Length }>;
-export type PropertyName = "position" | "rotation" | "opacity" | "depth";
-export type PropertyValue = Vec2 | Angle | Opacity | Depth;
+export type Scale2 = Readonly<{ kind: "scale"; x: number; y: number }>;
+export type PropertyName = "position" | "rotation" | "scale" | "opacity" | "depth";
+export type PropertyValue = Vec2 | Scale2 | Angle | Opacity | Depth;
+
+export type Easing =
+  | Readonly<{ kind: "linear" }>
+  | Readonly<{ kind: "ease-in" }>
+  | Readonly<{ kind: "ease-out" }>
+  | Readonly<{ kind: "ease-in-out" }>
+  | Readonly<{
+      kind: "cubic-bezier";
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+    }>;
 
 export type LinearTrajectory = Readonly<{ kind: "linear" }>;
 export type BezierTrajectory = Readonly<{
@@ -23,6 +37,7 @@ export type MotionSegment<T extends PropertyValue> = Readonly<{
   duration: Time;
   target: T;
   from?: T;
+  easing?: Easing;
   trajectory?: T extends Vec2 ? Trajectory : never;
 }>;
 
@@ -62,6 +77,7 @@ export type AppearanceIR = Readonly<{ fill: string; stroke?: string }>;
 export type PropertyMap = Readonly<{
   position: TimedProperty<Vec2>;
   rotation: TimedProperty<Angle>;
+  scale: TimedProperty<Scale2>;
   opacity: TimedProperty<Opacity>;
   depth: TimedProperty<Depth>;
 }>;
@@ -84,7 +100,8 @@ export type SceneIR = Readonly<{
 }>;
 
 export type ExperienceIR = Readonly<{
-  version: "0.1";
+  version: "0.2";
+  irVersion: 2;
   name: string;
   canvas: Readonly<{ width: Length; height: Length }>;
   duration: Time;

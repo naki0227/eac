@@ -1,17 +1,19 @@
-import type {
-  ExperienceIR,
-  MotionSegment,
-  PropertyName,
-  PropertyValue,
-  TimedProperty,
-  Trajectory,
+import {
+  isValidEasing,
+  type ExperienceIR,
+  type MotionSegment,
+  type PropertyName,
+  type PropertyValue,
+  type TimedProperty,
+  type Trajectory,
 } from "@eac/ir";
 import { isUnit, type UnitKind } from "@eac/units";
 import { error, type Diagnostic } from "./diagnostic.js";
 
-const propertyKinds: Readonly<Record<PropertyName, UnitKind | "vec2">> = {
+const propertyKinds: Readonly<Record<PropertyName, UnitKind | "vec2" | "scale">> = {
   position: "vec2",
   rotation: "angle",
+  scale: "scale",
   opacity: "opacity",
   depth: "depth",
 };
@@ -20,7 +22,18 @@ function isFiniteUnit(value: unknown, kind: UnitKind): boolean {
   return isUnit(value, kind) && Number.isFinite(value.value);
 }
 
-function validValue(value: unknown, kind: UnitKind | "vec2"): boolean {
+function validValue(value: unknown, kind: UnitKind | "vec2" | "scale"): boolean {
+  if (kind === "scale") {
+    if (typeof value !== "object" || value === null) return false;
+    const scale = value as { kind?: unknown; x?: unknown; y?: unknown };
+    return (
+      scale.kind === "scale" &&
+      typeof scale.x === "number" &&
+      Number.isFinite(scale.x) &&
+      typeof scale.y === "number" &&
+      Number.isFinite(scale.y)
+    );
+  }
   if (kind !== "vec2") return isFiniteUnit(value, kind);
   if (typeof value !== "object" || value === null) return false;
   const vector = value as { x?: unknown; y?: unknown };
@@ -101,7 +114,7 @@ function numericAndUnits(experience: ExperienceIR): Diagnostic[] {
               ["replace it with a finite value using the documented unit constructor"],
             ),
           );
-        for (const segment of property.segments as readonly MotionSegment<PropertyValue>[])
+        for (const segment of property.segments as readonly MotionSegment<PropertyValue>[]) {
           if (
             !validValue(segment.target, kind) ||
             (segment.from !== undefined && !validValue(segment.from, kind)) ||
@@ -117,6 +130,20 @@ function numericAndUnits(experience: ExperienceIR): Diagnostic[] {
                 ["replace invalid values", "use eac docs for the expected units"],
               ),
             );
+          if (segment.easing !== undefined && !isValidEasing(segment.easing))
+            diagnostics.push(
+              error(
+                "eac::motion::invalid-easing",
+                `Motion \`${segment.id}\` has an invalid easing definition.`,
+                `${scene.id}.${object.id}.${name}`,
+                "Easing coordinates must be finite and cubic Bézier x coordinates must stay within 0–1.",
+                [
+                  "use easing.linear, easeIn, easeOut, or easeInOut",
+                  "use easing.cubicBezier with x coordinates from 0 to 1",
+                ],
+              ),
+            );
+        }
         if (name === "opacity")
           for (const segment of property.segments)
             if ("value" in segment.target && (segment.target.value < 0 || segment.target.value > 1))
@@ -141,6 +168,23 @@ function numericAndUnits(experience: ExperienceIR): Diagnostic[] {
             `${scene.id}.${object.id}.opacity`,
             "Opacity outside the normalized range is invalid.",
             ["use opacity(value) with a value from 0 to 1"],
+          ),
+        );
+      const scales = [
+        object.properties.scale.initial,
+        ...object.properties.scale.segments.flatMap((segment) => [
+          segment.target,
+          ...(segment.from === undefined ? [] : [segment.from]),
+        ]),
+      ];
+      if (scales.some((scale) => validValue(scale, "scale") && (scale.x <= 0 || scale.y <= 0)))
+        diagnostics.push(
+          error(
+            "eac::transform::invalid-scale",
+            `\`${object.id}.scale\` contains a non-positive scale.`,
+            `${scene.id}.${object.id}.scale`,
+            "EaC v0.2 requires positive scale components for deterministic non-reflecting transforms.",
+            ["use scale values greater than zero"],
           ),
         );
     }

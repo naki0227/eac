@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { px, sec } from "@eac/units";
+import { deg, px, sec, type Angle } from "@eac/units";
 import { evaluateTimedProperty, type TimedProperty, type Vec2 } from "./index.js";
 
 describe("evaluateTimedProperty", () => {
@@ -49,5 +49,23 @@ describe("evaluateTimedProperty", () => {
     expect(evaluateTimedProperty(bezier, 1)).toEqual({ x: px(50), y: px(75) });
     expect(evaluateTimedProperty(cycloid, 1)).toEqual(evaluateTimedProperty(cycloid, 1));
     expect(evaluateTimedProperty(cycloid, 2)).toEqual({ x: px(100), y: px(0) });
+  });
+
+  it("applies easing without replaying earlier frames", () => {
+    const property: TimedProperty<Angle> = {
+      kind: "timed",
+      initial: deg(0),
+      segments: [
+        {
+          id: "turn",
+          start: sec(1),
+          duration: sec(2),
+          target: deg(100),
+          easing: { kind: "ease-in" },
+        },
+      ],
+    };
+    expect(evaluateTimedProperty(property, 2)).toEqual(deg(25));
+    expect(evaluateTimedProperty(property, 3)).toEqual(deg(100));
   });
 });

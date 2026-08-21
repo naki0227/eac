@@ -61,6 +61,13 @@ export const apiDocs: readonly ApiDoc[] = [
     keywords: ["move", "position", "animate", "motion", "linear"],
   },
   {
+    name: "moveBy",
+    summary: "Moves by an offset from the position evaluated at `at`.",
+    signature: "object.moveBy(delta, { at, duration, easing? })",
+    example: "dot.moveBy({ x: px(120), y: px(-20) }, { at: sec(1), duration: sec(0.8) })",
+    keywords: ["move", "relative", "offset", "position", "motion"],
+  },
+  {
     name: "bezier",
     summary: "Uses a cubic Bézier trajectory for moveTo.",
     signature: 'trajectory: { kind: "bezier", control1, control2 }',
@@ -84,6 +91,27 @@ export const apiDocs: readonly ApiDoc[] = [
     keywords: ["rotate", "angle", "spin", "turn"],
   },
   {
+    name: "rotateBy",
+    summary: "Rotates by an angle from the rotation evaluated at `at`.",
+    signature: "object.rotateBy(angle, { at, duration, easing? })",
+    example: "dot.rotateBy(deg(90), { at: sec(1), duration: sec(0.5) })",
+    keywords: ["rotate", "relative", "angle", "spin", "turn"],
+  },
+  {
+    name: "scaleTo",
+    summary: "Scales uniformly or per axis to an absolute target.",
+    signature: "object.scaleTo(number | { x, y }, { at, duration, easing? })",
+    example: "dot.scaleTo(1.2, { at: sec(1), duration: sec(0.4) })",
+    keywords: ["scale", "resize", "transform", "absolute"],
+  },
+  {
+    name: "scaleBy",
+    summary: "Adds a scale delta to the scale evaluated at `at`.",
+    signature: "object.scaleBy(number | { x, y }, { at, duration, easing? })",
+    example: "dot.scaleBy(0.2, { at: sec(2), duration: sec(0.3) })",
+    keywords: ["scale", "relative", "resize", "transform"],
+  },
+  {
     name: "fadeTo",
     summary: "Interpolates opacity to a value from 0 to 1.",
     signature: "object.fadeTo(opacity, { at, duration })",
@@ -96,6 +124,21 @@ export const apiDocs: readonly ApiDoc[] = [
     signature: "object.depthTo(depth, { at, duration })",
     example: "dot.depthTo(depth(100), { at: sec(1), duration: sec(2) })",
     keywords: ["depth", "z", "front", "back", "layer"],
+  },
+  {
+    name: "depthBy",
+    summary: "Moves by a depth offset from the depth evaluated at `at`.",
+    signature: "object.depthBy(delta, { at, duration, easing? })",
+    example: "dot.depthBy(depth(20), { at: sec(1), duration: sec(0.5) })",
+    keywords: ["depth", "relative", "z", "front", "back", "layer"],
+  },
+  {
+    name: "easing",
+    summary: "Provides deterministic linear, ease-in/out, and cubic Bézier timing curves.",
+    signature:
+      "easing.linear | easing.easeIn | easing.easeOut | easing.easeInOut | easing.cubicBezier(x1, y1, x2, y2)",
+    example: "dot.moveTo(target, { at: sec(1), duration: sec(0.8), easing: easing.easeOut })",
+    keywords: ["easing", "timing", "curve", "cubic bezier", "animation"],
   },
   {
     name: "bringForward",

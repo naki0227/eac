@@ -69,7 +69,7 @@ function conflicts(experience: ExperienceIR): Diagnostic[] {
                   "eac::motion::conflicting-writers",
                   `\`${object.id}.${name}\` has multiple writers between ${overlapStart.toFixed(2)}s and ${overlapEnd.toFixed(2)}s.`,
                   `${scene.id}.${object.id}.${name}`,
-                  "EaC v0.1 allows only one writer per property for any point in time.",
+                  "EaC v0.2 allows only one writer per property for any point in time.",
                   ["change one motion's at", "shorten one motion's duration"],
                   [
                     `${first.id}  ${first.start.value.toFixed(1)} ━━━ ${first.start.value + first.duration.value}s`,
@@ -89,9 +89,9 @@ function unsupported(experience: ExperienceIR): Diagnostic[] {
       object.unsupportedProperties.map((property) =>
         error(
           `eac::property::${property.kind}-unsupported`,
-          `${property.kind === "reactive" ? "ReactiveProperty" : "SimulatedProperty"} is not supported by EaC v0.1.`,
+          `${property.kind === "reactive" ? "ReactiveProperty" : "SimulatedProperty"} is not supported by EaC v0.2.`,
           `${scene.id}.${object.id}.${property.name}`,
-          "v0.1 guarantees direct seeking and supports TimedProperty only.",
+          "v0.2 guarantees direct seeking and supports TimedProperty only.",
           ["replace it with a TimedProperty", "remove the unsupported property"],
         ),
       ),

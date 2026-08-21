@@ -20,6 +20,8 @@ const preventsHarness = (diagnostic: Diagnostic): boolean =>
     "eac::unit::invalid",
     "eac::numeric::invalid",
     "eac::numeric::invalid-opacity",
+    "eac::transform::invalid-scale",
+    "eac::motion::invalid-easing",
     "eac::geometry::invalid",
   ].includes(diagnostic.id);
 
@@ -33,7 +35,7 @@ export function checkExperience(experience: ExperienceIR): CheckResult {
           frames: 0,
           objects: experience.scenes.reduce((total, scene) => total + scene.objects.length, 0),
           timedProperties: experience.scenes.reduce(
-            (total, scene) => total + scene.objects.length * 4,
+            (total, scene) => total + scene.objects.length * 5,
             0,
           ),
           invalidTransforms: 0,

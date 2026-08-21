@@ -5,32 +5,33 @@ type Box = Readonly<{ left: number; top: number; right: number; bottom: number }
 
 function bounds(object: ObjectIR, time: number): Box {
   const position = evaluateTimedProperty(object.properties.position, time);
+  const scale = evaluateTimedProperty(object.properties.scale, time);
   const geometry: GeometryIR = object.geometry;
   if (geometry.kind === "rect")
     return {
-      left: position.x.value - geometry.width.value / 2,
-      top: position.y.value - geometry.height.value / 2,
-      right: position.x.value + geometry.width.value / 2,
-      bottom: position.y.value + geometry.height.value / 2,
+      left: position.x.value - (geometry.width.value * scale.x) / 2,
+      top: position.y.value - (geometry.height.value * scale.y) / 2,
+      right: position.x.value + (geometry.width.value * scale.x) / 2,
+      bottom: position.y.value + (geometry.height.value * scale.y) / 2,
     };
   if (geometry.kind === "circle")
     return {
-      left: position.x.value - geometry.radius.value,
-      top: position.y.value - geometry.radius.value,
-      right: position.x.value + geometry.radius.value,
-      bottom: position.y.value + geometry.radius.value,
+      left: position.x.value - geometry.radius.value * scale.x,
+      top: position.y.value - geometry.radius.value * scale.y,
+      right: position.x.value + geometry.radius.value * scale.x,
+      bottom: position.y.value + geometry.radius.value * scale.y,
     };
   if (geometry.kind === "text") {
     const width = geometry.width?.value ?? geometry.text.length * geometry.fontSize.value * 0.6;
     return {
       left: position.x.value,
-      top: position.y.value - geometry.fontSize.value,
-      right: position.x.value + width,
+      top: position.y.value - geometry.fontSize.value * scale.y,
+      right: position.x.value + width * scale.x,
       bottom: position.y.value,
     };
   }
-  const xs = geometry.points.map((point) => point.x.value + position.x.value);
-  const ys = geometry.points.map((point) => point.y.value + position.y.value);
+  const xs = geometry.points.map((point) => point.x.value * scale.x + position.x.value);
+  const ys = geometry.points.map((point) => point.y.value * scale.y + position.y.value);
   return {
     left: Math.min(...xs),
     top: Math.min(...ys),
@@ -66,6 +67,7 @@ export function runHarness(experience: ExperienceIR): {
         const values = [
           evaluateTimedProperty(object.properties.position, time),
           evaluateTimedProperty(object.properties.rotation, time),
+          evaluateTimedProperty(object.properties.scale, time),
           evaluateTimedProperty(object.properties.opacity, time),
           evaluateTimedProperty(object.properties.depth, time),
         ];
@@ -105,7 +107,7 @@ export function runHarness(experience: ExperienceIR): {
       frames,
       objects: experience.scenes.reduce((total, scene) => total + scene.objects.length, 0),
       timedProperties: experience.scenes.reduce(
-        (total, scene) => total + scene.objects.length * 4,
+        (total, scene) => total + scene.objects.length * 5,
         0,
       ),
       invalidTransforms,

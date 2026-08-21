@@ -29,10 +29,11 @@ function geometry(object: ObjectIR): string {
 function renderObject(object: ObjectIR, time: number): string {
   const position = evaluateTimedProperty(object.properties.position, time);
   const rotation = evaluateTimedProperty(object.properties.rotation, time);
+  const explicitScale = evaluateTimedProperty(object.properties.scale, time);
   const alpha = evaluateTimedProperty(object.properties.opacity, time);
   const z = evaluateTimedProperty(object.properties.depth, time);
   const scale = Math.max(0.1, 1 + z.value / 1_000);
-  return `<g id="${escapeXml(object.id)}" transform="translate(${number(position.x.value)} ${number(position.y.value)}) rotate(${number(rotation.value)}) scale(${number(scale)})" opacity="${number(alpha.value)}">${geometry(object)}</g>`;
+  return `<g id="${escapeXml(object.id)}" transform="translate(${number(position.x.value)} ${number(position.y.value)}) rotate(${number(rotation.value)}) scale(${number(explicitScale.x * scale)} ${number(explicitScale.y * scale)})" opacity="${number(alpha.value)}">${geometry(object)}</g>`;
 }
 
 export function renderSvg(experience: ExperienceIR, time: number): string {

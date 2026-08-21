@@ -1,27 +1,36 @@
 import type {
   AppearanceIR,
   GeometryIR,
-  MotionSegment,
   ObjectIR,
   PropertyMap,
   PropertyName,
-  PropertyValue,
+  Scale2,
   Trajectory,
   UnsupportedProperty,
   Vec2,
 } from "@eac/ir";
 import type { Angle, Depth, Opacity, Time } from "@eac/units";
+import {
+  createMotionOperationMap,
+  normalizeProperties,
+  type MotionOperation,
+  type MotionOptions,
+  type RelativeMotionOptions,
+} from "./motion-normalizer.js";
 
 type MutableObject = { -readonly [K in keyof ObjectIR]: ObjectIR[K] };
-type MotionOptions<T extends PropertyValue> = Readonly<{
-  at: Time;
-  duration: Time;
-  from?: T;
-}>;
 export type MoveOptions = MotionOptions<Vec2> & Readonly<{ trajectory?: Trajectory }>;
+export type ScaleInput = number | Readonly<{ x: number; y: number }>;
+
+const scaleValue = (value: ScaleInput): Scale2 =>
+  typeof value === "number"
+    ? { kind: "scale", x: value, y: value }
+    : { kind: "scale", x: value.x, y: value.y };
 
 export class ObjectBuilder {
   readonly #object: MutableObject;
+  readonly #baseProperties: PropertyMap;
+  readonly #operations = createMotionOperationMap();
   #motionCount = 0;
 
   constructor(
@@ -31,6 +40,7 @@ export class ObjectBuilder {
     properties: PropertyMap,
     sourceOrder: number,
   ) {
+    this.#baseProperties = properties;
     this.#object = {
       id,
       geometry,
@@ -48,23 +58,22 @@ export class ObjectBuilder {
 
   #addMotion<K extends PropertyName>(
     name: K,
-    target: PropertyMap[K]["initial"],
+    value: PropertyMap[K]["initial"],
     options: MotionOptions<PropertyMap[K]["initial"]>,
     trajectory?: Trajectory,
+    mode: MotionOperation<PropertyMap[K]["initial"]>["mode"] = "absolute",
   ): this {
-    const property = this.#object.properties[name];
-    const segment = {
+    const operation: MotionOperation<PropertyMap[K]["initial"]> = {
       id: `${this.#object.id}.${name}.${++this.#motionCount}`,
-      start: options.at,
-      duration: options.duration,
-      target,
-      ...(options.from === undefined ? {} : { from: options.from }),
+      ordinal: this.#motionCount,
+      mode,
+      value,
+      options,
       ...(trajectory === undefined ? {} : { trajectory }),
-    } as MotionSegment<PropertyMap[K]["initial"]>;
-    this.#object.properties = {
-      ...this.#object.properties,
-      [name]: { ...property, segments: [...property.segments, segment] },
     };
+    const operations = this.#operations[name] as MotionOperation<PropertyMap[K]["initial"]>[];
+    operations.push(operation);
+    this.#object.properties = normalizeProperties(this.#baseProperties, this.#operations);
     return this;
   }
 
@@ -72,8 +81,24 @@ export class ObjectBuilder {
     return this.#addMotion("position", target, options, options.trajectory);
   }
 
+  moveBy(delta: Vec2, options: RelativeMotionOptions): this {
+    return this.#addMotion("position", delta, options, undefined, "relative");
+  }
+
   rotateTo(target: Angle, options: MotionOptions<Angle>): this {
     return this.#addMotion("rotation", target, options);
+  }
+
+  rotateBy(delta: Angle, options: RelativeMotionOptions): this {
+    return this.#addMotion("rotation", delta, options, undefined, "relative");
+  }
+
+  scaleTo(target: ScaleInput, options: MotionOptions<Scale2>): this {
+    return this.#addMotion("scale", scaleValue(target), options);
+  }
+
+  scaleBy(delta: ScaleInput, options: RelativeMotionOptions): this {
+    return this.#addMotion("scale", scaleValue(delta), options, undefined, "relative");
   }
 
   fadeTo(target: Opacity, options: MotionOptions<Opacity>): this {
@@ -82,6 +107,10 @@ export class ObjectBuilder {
 
   depthTo(target: Depth, options: MotionOptions<Depth>): this {
     return this.#addMotion("depth", target, options);
+  }
+
+  depthBy(delta: Depth, options: RelativeMotionOptions): this {
+    return this.#addMotion("depth", delta, options, undefined, "relative");
   }
 
   bringForward(options: Readonly<{ at: Time; duration: Time; to: Depth }>): this {

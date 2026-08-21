@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { experience, opacity, px, sec } from "@eac/core";
+import { easing, experience, opacity, px, sec } from "@eac/core";
 import type { ExperienceIR } from "@eac/ir";
 import { checkExperience, formatCheckResult } from "./index.js";
 
@@ -147,6 +147,53 @@ describe("checker", () => {
         "eac::numeric::invalid-opacity",
         "eac::geometry::invalid",
       ]),
+    );
+  });
+
+  it("rejects invalid scale and cubic Bezier easing values", () => {
+    const project = experience({
+      name: "invalid-transform",
+      width: px(100),
+      height: px(100),
+      duration: sec(1),
+    });
+    project
+      .scene("main")
+      .circle("dot", {
+        position: { x: px(10), y: px(10) },
+        radius: px(2),
+        fill: "red",
+      })
+      .scaleTo(-1, { at: sec(0), duration: sec(1), easing: easing.easeOut });
+
+    const valid = project.build();
+    const segment = valid.scenes[0]?.objects[0]?.properties.scale.segments[0];
+    if (!segment) throw new Error("Expected scale segment in test fixture.");
+    const malformed = {
+      ...valid,
+      scenes: [
+        {
+          ...valid.scenes[0],
+          objects: [
+            {
+              ...valid.scenes[0]?.objects[0],
+              properties: {
+                ...valid.scenes[0]?.objects[0]?.properties,
+                scale: {
+                  ...valid.scenes[0]?.objects[0]?.properties.scale,
+                  segments: [
+                    { ...segment, easing: { kind: "cubic-bezier", x1: -1, y1: 0, x2: 1, y2: 1 } },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    } as unknown as ExperienceIR;
+
+    expect(checkExperience(malformed).diagnostics.map((item) => item.id)).toEqual(
+      expect.arrayContaining(["eac::transform::invalid-scale", "eac::motion::invalid-easing"]),
     );
   });
 });

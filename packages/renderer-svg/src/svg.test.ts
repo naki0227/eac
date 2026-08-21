@@ -37,4 +37,22 @@ describe("SVG renderer", () => {
     const png = renderPng(project.build(), 0);
     expect([...png.slice(1, 4)]).toEqual([80, 78, 71]);
   });
+
+  it("renders non-uniform scale as an explicit transform", () => {
+    const project = experience({
+      name: "scale",
+      width: px(100),
+      height: px(100),
+      duration: sec(1),
+    });
+    project.scene("main").rect("card", {
+      position: { x: px(50), y: px(50) },
+      width: px(20),
+      height: px(10),
+      fill: "red",
+      scale: { x: 2, y: 0.5 },
+    });
+
+    expect(renderSvg(project.build(), 0)).toContain("scale(2 0.5)");
+  });
 });

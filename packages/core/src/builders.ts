@@ -4,6 +4,7 @@ import {
   type ExperienceIR,
   type GeometryIR,
   type ObjectIR,
+  type Scale2,
   type SceneIR,
   type Vec2,
 } from "@eac/ir";
@@ -28,13 +29,20 @@ type ObjectStyle = Readonly<{
   rotation?: Angle;
   opacity?: Opacity;
   depth?: Depth;
+  scale?: number | Readonly<{ x: number; y: number }>;
 }>;
+
+function scaleValue(value: ObjectStyle["scale"]): Scale2 {
+  if (typeof value === "number") return { kind: "scale", x: value, y: value };
+  return { kind: "scale", x: value?.x ?? 1, y: value?.y ?? 1 };
+}
 
 function properties(style: ObjectStyle) {
   const defaults = defaultProperties(style.position);
   return {
     ...defaults,
     rotation: { ...defaults.rotation, initial: style.rotation ?? deg(0) },
+    scale: { ...defaults.scale, initial: scaleValue(style.scale) },
     opacity: { ...defaults.opacity, initial: style.opacity ?? opacity(1) },
     depth: { ...defaults.depth, initial: style.depth ?? depth(0) },
   };
@@ -121,7 +129,8 @@ export class SceneBuilder {
 
 export class ExperienceBuilder {
   readonly #experience: {
-    version: "0.1";
+    version: "0.2";
+    irVersion: 2;
     name: string;
     canvas: { width: Length; height: Length };
     duration: Time;
@@ -139,7 +148,8 @@ export class ExperienceBuilder {
     }>,
   ) {
     this.#experience = {
-      version: "0.1",
+      version: "0.2",
+      irVersion: 2,
       name: options.name,
       canvas: { width: options.width, height: options.height },
       duration: options.duration,
