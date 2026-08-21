@@ -79,6 +79,48 @@ describe("agent-facing CLI", () => {
     }
   });
 
+  it("drives check, inspect, and preview from a scenario", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "eac-cli-scenario-"));
+    const project = join(import.meta.dirname, "../../../examples/scenario-replay/eac.config.mjs");
+    const trace = join(
+      import.meta.dirname,
+      "../../../examples/scenario-replay/replay.eac-scenario.mjs",
+    );
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    try {
+      expect(await runCli(["check", "--ci", project, "--scenario", trace])).toBe(0);
+      const checkOutput = log.mock.calls.flat().join("\n");
+      expect(checkOutput).toContain("assertions passed");
+      expect(checkOutput).toContain("state transitions");
+
+      log.mockClear();
+      expect(await runCli(["inspect", project, "--scenario", trace])).toBe(0);
+      const inspectOutput = log.mock.calls.flat().join("\n");
+      expect(inspectOutput).toContain("Bindings:");
+      expect(inspectOutput).toContain("trigger.scale");
+      expect(inspectOutput).toContain("click(trigger)");
+      expect(inspectOutput).toContain("armed false → true");
+
+      log.mockClear();
+      expect(await runCli(["inspect", project, "--scenario", trace, "--json"])).toBe(0);
+      const snapshot: unknown = JSON.parse(log.mock.calls.flat().join(""));
+      expect(snapshot).toMatchObject({
+        signals: expect.arrayContaining(["hover(trigger)", "state(armed)"]),
+        scenarioReplay: { name: "replay" },
+      });
+
+      const preview = join(directory, "preview.html");
+      expect(await runCli(["preview", project, "--scenario", trace, "--output", preview])).toBe(0);
+      const html = await readFile(preview, "utf8");
+      expect(html).toContain("Replaying scenario replay");
+      expect(html).toContain('id="record"');
+      expect(html).toContain("Export scenario");
+      expect(html).not.toContain("<script id=");
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it("honors the project prettier configuration in format and check", async () => {
     const directory = await mkdtemp(join(tmpdir(), "eac-cli-config-"));
     const project = join(directory, "eac.config.mjs");

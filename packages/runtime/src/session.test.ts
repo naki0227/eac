@@ -111,6 +111,24 @@ describe("reactive replay", () => {
     expect(reversed).toEqual(seen);
   });
 
+  it("leaves a timed-only scene byte-identical to rendering without a session", () => {
+    const value = experience({
+      name: "compat",
+      width: px(200),
+      height: px(200),
+      duration: sec(2),
+      fps: 10,
+    });
+    value
+      .scene("main")
+      .circle("dot", { position: { x: px(10), y: px(10) }, radius: px(8), fill: "#38bdf8" })
+      .moveTo({ x: px(190), y: px(190) }, { at: sec(0), duration: sec(2) });
+    const ir = value.build();
+    const session = new ExperienceSession(ir);
+
+    for (const time of [0, 0.37, 1, 1.63, 2]) expect(session.overridesAt(time).size).toBe(0);
+  });
+
   it("evaluates a scene with no reactive content exactly as a timed scene", () => {
     const value = experience({ name: "timed", width: px(100), height: px(100), duration: sec(1) });
     value

@@ -1,5 +1,6 @@
 import { assetDocs } from "./asset-docs.js";
 import { v02Docs } from "./v02-docs.js";
+import { v03Docs } from "./v03-docs.js";
 
 export type ApiDoc = Readonly<{
   name: string;
@@ -17,6 +18,9 @@ export type ApiCategory =
   | "Styling"
   | "Assets"
   | "Audio"
+  | "Reactive"
+  | "Interaction"
+  | "Scenario"
   | "Units"
   | "Validation";
 
@@ -277,6 +281,6 @@ const baseApiDocs: readonly ApiDoc[] = [
   },
 ];
 
-export const apiDocs: readonly ApiDoc[] = [...baseApiDocs, ...assetDocs, ...v02Docs];
+export const apiDocs: readonly ApiDoc[] = [...baseApiDocs, ...assetDocs, ...v02Docs, ...v03Docs];
 
 export { categorizeDocs, categoryForDoc, formatApiDoc, searchDocs } from "./doc-catalog.js";

@@ -29,6 +29,9 @@ const categories: Readonly<Record<ApiCategory, ReadonlySet<string>>> = {
   Styling: new Set(["color", "styling", "colorTo", "strokeColorTo", "blurTo"]),
   Assets: new Set(["asset", "image"]),
   Audio: new Set(["audio"]),
+  Reactive: new Set(["reactive", "signals", "state", "expression", "reactive-writers"]),
+  Interaction: new Set(["hover", "click", "keyboard", "scroll", "hit-testing", "event-order"]),
+  Scenario: new Set(["scenario", "replay", "recording"]),
   Units: new Set(["units"]),
   Validation: new Set(["inspect", "check", "preview"]),
 };
