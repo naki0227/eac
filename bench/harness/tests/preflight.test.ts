@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCodexFinalResponse } from "../src/preflight.js";
+import { parseCodexFinalResponse, parseDeniedProxyHosts } from "../src/preflight.js";
 
 describe("Codex transport preflight", () => {
   it("extracts the final agent message from Codex JSONL", () => {
@@ -17,5 +17,17 @@ describe("Codex transport preflight", () => {
       '{"type":"item.completed","item":{"type":"command_execution","text":"BENCH_AUTH_OK"}}',
     ].join("\n");
     expect(parseCodexFinalResponse(output)).toBeNull();
+  });
+});
+
+describe("proxy diagnostics", () => {
+  it("returns unique sorted denied host names without other log data", () => {
+    const logs = [
+      "EaC egress proxy allows: chatgpt.com",
+      'EAC_PROXY_DENY {"timestamp":"ignored","host":"z.openai.com"}',
+      'EAC_PROXY_DENY {"timestamp":"ignored","host":"a.openai.com"}',
+      'EAC_PROXY_DENY {"timestamp":"ignored","host":"z.openai.com"}',
+    ].join("\n");
+    expect(parseDeniedProxyHosts(logs)).toEqual(["a.openai.com", "z.openai.com"]);
   });
 });

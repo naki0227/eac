@@ -38,6 +38,22 @@ export function parseCodexFinalResponse(output: string): string | null {
   return response;
 }
 
+export function parseDeniedProxyHosts(logs: string): readonly string[] {
+  const hosts = new Set<string>();
+  for (const line of logs.split("\n")) {
+    if (!line.startsWith("EAC_PROXY_DENY ")) continue;
+    try {
+      const value: unknown = JSON.parse(line.slice("EAC_PROXY_DENY ".length));
+      if (typeof value !== "object" || value === null) continue;
+      const host = (value as { host?: unknown }).host;
+      if (typeof host === "string" && host.length > 0) hosts.add(host);
+    } catch {
+      // Ignore malformed proxy diagnostic lines.
+    }
+  }
+  return [...hosts].sort();
+}
+
 export async function runAuthTransportPreflight(): Promise<void> {
   const status = await requireSuccess(
     "git",
@@ -81,8 +97,11 @@ export async function runAuthTransportPreflight(): Promise<void> {
     const proxyLogs = await containerLogs(proxy);
     if (result.timedOut || result.exitCode !== 0)
       throw new Error(`Codex auth transport preflight failed: ${result.stderr}`);
-    if (proxyLogs.includes("EAC_PROXY_DENY"))
-      throw new Error("Codex auth transport preflight attempted a non-allow-listed host.");
+    const deniedHosts = parseDeniedProxyHosts(proxyLogs);
+    if (deniedHosts.length > 0)
+      throw new Error(
+        `Codex auth transport preflight attempted non-allow-listed hosts: ${deniedHosts.join(", ")}`,
+      );
     const response = parseCodexFinalResponse(result.stdout);
     if (response !== expectedResponse)
       throw new Error(`Unexpected Codex preflight response: ${JSON.stringify(response)}`);
