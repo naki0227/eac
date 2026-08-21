@@ -38,8 +38,8 @@ and still receives the same final evaluator pass.
 ## Network boundary
 
 Real Codex containers attach only to an internal Docker network. A dual-homed CONNECT proxy allows
-only the pinned OpenAI service hosts (`api.openai.com`, `auth.openai.com`, `chatgpt.com`, and
-`ab.chatgpt.com`) on port
+only the pinned OpenAI service hosts (`api.openai.com`, `auth.openai.com`, `chatgpt.com`,
+`ab.chatgpt.com`, and the three observed `sdmntpr*.oaiusercontent.com` regional hosts) on port
 443; direct internet routes and GitHub are unavailable. ChatGPT authentication is the default:
 the harness uses `EAC_CODEX_AUTH_FILE` when set, otherwise `~/.codex/auth.json`. `OPENAI_API_KEY`
 remains an optional fallback when no file-based login exists. If Codex changes required service
