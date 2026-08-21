@@ -1,6 +1,23 @@
 import { evaluateTimedProperty } from "./evaluate.js";
 import type { ColorIR, NodeIR, ObjectIR, SceneIR, ShadowIR } from "./types.js";
 
+/**
+ * Reactive output for one node, produced once per replay step. An absent field keeps the node's
+ * TimedProperty, so a scene with no bindings evaluates exactly as it did in v0.2.
+ */
+export type NodeOverride = Readonly<{
+  position?: Readonly<{ x: number; y: number }>;
+  rotation?: number;
+  scale?: Readonly<{ x: number; y: number }>;
+  opacity?: number;
+  depth?: number;
+  blur?: number;
+  fill?: ColorIR;
+  stroke?: ColorIR;
+}>;
+export type ReactiveOverrides = ReadonlyMap<string, NodeOverride>;
+const NO_OVERRIDES: ReactiveOverrides = new Map();
+
 export type Matrix2D = readonly [number, number, number, number, number, number];
 
 export type EvaluatedObject = Readonly<{
@@ -33,10 +50,19 @@ export function multiplyMatrices(left: Matrix2D, right: Matrix2D): Matrix2D {
   ];
 }
 
-export function evaluateLocalMatrix(node: NodeIR, time: number): Matrix2D {
-  const position = evaluateTimedProperty(node.properties.position, time);
-  const rotation = evaluateTimedProperty(node.properties.rotation, time).value * (Math.PI / 180);
-  const scale = evaluateTimedProperty(node.properties.scale, time);
+export function evaluateLocalMatrix(
+  node: NodeIR,
+  time: number,
+  override: NodeOverride = {},
+): Matrix2D {
+  const timedPosition = evaluateTimedProperty(node.properties.position, time);
+  const position = override.position ?? {
+    x: timedPosition.x.value,
+    y: timedPosition.y.value,
+  };
+  const degrees = override.rotation ?? evaluateTimedProperty(node.properties.rotation, time).value;
+  const rotation = degrees * (Math.PI / 180);
+  const scale = override.scale ?? evaluateTimedProperty(node.properties.scale, time);
   const cosine = Math.cos(rotation);
   const sine = Math.sin(rotation);
   return [
@@ -44,8 +70,8 @@ export function evaluateLocalMatrix(node: NodeIR, time: number): Matrix2D {
     sine * scale.x,
     -sine * scale.y,
     cosine * scale.y,
-    position.x.value,
-    position.y.value,
+    position.x,
+    position.y,
   ];
 }
 
@@ -53,7 +79,11 @@ export function transformPoint(matrix: Matrix2D, x: number, y: number): readonly
   return [matrix[0] * x + matrix[2] * y + matrix[4], matrix[1] * x + matrix[3] * y + matrix[5]];
 }
 
-export function evaluateScene(scene: SceneIR, localTime: number): readonly EvaluatedObject[] {
+export function evaluateScene(
+  scene: SceneIR,
+  localTime: number,
+  overrides: ReactiveOverrides = NO_OVERRIDES,
+): readonly EvaluatedObject[] {
   const leaves: EvaluatedObject[] = [];
   const active = new Set<NodeIR>();
   const visit = (
@@ -64,17 +94,22 @@ export function evaluateScene(scene: SceneIR, localTime: number): readonly Evalu
     sourcePath: readonly number[],
   ): void => {
     if (active.has(node)) return;
-    const matrix = multiplyMatrices(parentMatrix, evaluateLocalMatrix(node, localTime));
-    const opacity = parentOpacity * evaluateTimedProperty(node.properties.opacity, localTime).value;
-    const depth = parentDepth + evaluateTimedProperty(node.properties.depth, localTime).value;
+    const override = overrides.get(node.id) ?? {};
+    const matrix = multiplyMatrices(parentMatrix, evaluateLocalMatrix(node, localTime, override));
+    const localOpacity =
+      override.opacity ?? evaluateTimedProperty(node.properties.opacity, localTime).value;
+    const opacity = parentOpacity * localOpacity;
+    const depth =
+      parentDepth +
+      (override.depth ?? evaluateTimedProperty(node.properties.depth, localTime).value);
     if (node.kind === "object") {
       leaves.push({
         object: node,
         appearance: {
-          fill: evaluateTimedProperty(node.appearance.fill, localTime),
-          stroke: evaluateTimedProperty(node.appearance.stroke, localTime),
+          fill: override.fill ?? evaluateTimedProperty(node.appearance.fill, localTime),
+          stroke: override.stroke ?? evaluateTimedProperty(node.appearance.stroke, localTime),
           strokeWidth: node.appearance.strokeWidth.value,
-          blur: evaluateTimedProperty(node.appearance.blur, localTime).value,
+          blur: override.blur ?? evaluateTimedProperty(node.appearance.blur, localTime).value,
           ...(node.appearance.shadow === undefined ? {} : { shadow: node.appearance.shadow }),
         },
         matrix,

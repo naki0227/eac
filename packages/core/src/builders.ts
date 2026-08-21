@@ -18,6 +18,7 @@ import {
 } from "./node-factory.js";
 import { ObjectBuilder } from "./object-builder.js";
 import { asset } from "./asset.js";
+import { ReactiveScene } from "./reactive-scene.js";
 
 export type AudioOptions = Readonly<{
   id?: string;
@@ -37,6 +38,7 @@ export class SceneBuilder {
     nodes: NodeIR[];
     audioClips: AudioClipIR[];
   };
+  readonly reactive = new ReactiveScene();
 
   constructor(id: string, options: Readonly<{ at?: Time; duration: Time }>) {
     this.#scene = {
@@ -49,7 +51,38 @@ export class SceneBuilder {
   }
 
   get ir(): SceneIR {
-    return this.#scene;
+    // Reactive authoring is collected mutably and frozen here, alongside the node tree.
+    return {
+      ...this.#scene,
+      reactive: {
+        states: [...this.reactive.states],
+        bindings: [...this.reactive.bindings],
+        rules: [...this.reactive.rules],
+        sounds: [...this.reactive.sounds],
+      },
+    };
+  }
+
+  state(name: string, initial: boolean): ReturnType<ReactiveScene["booleanState"]>;
+  state(name: string, initial: number): ReturnType<ReactiveScene["numberState"]>;
+  state(name: string, initial: boolean | number): unknown {
+    return typeof initial === "boolean"
+      ? this.reactive.booleanState(name, initial)
+      : this.reactive.numberState(name, initial);
+  }
+
+  bind(...args: Parameters<ReactiveScene["bind"]>): this {
+    this.reactive.bind(...args);
+    return this;
+  }
+
+  on(...args: Parameters<ReactiveScene["on"]>): this {
+    this.reactive.on(...args);
+    return this;
+  }
+
+  sound(...args: Parameters<ReactiveScene["sound"]>): ReturnType<ReactiveScene["sound"]> {
+    return this.reactive.sound(...args);
   }
 
   #object(id: string, geometry: GeometryIR, style: ObjectStyle): ObjectBuilder {
@@ -147,14 +180,16 @@ export class SceneBuilder {
 
 export class ExperienceBuilder {
   readonly #experience: {
-    version: "0.2";
-    irVersion: 2;
+    version: "0.3";
+    irVersion: 3;
     name: string;
     canvas: { width: Length; height: Length };
     duration: Time;
     fps: number;
     scenes: SceneIR[];
   };
+  /** Scenes are materialized at build() so reactive declarations added after scene() are included. */
+  readonly #sceneBuilders: SceneBuilder[] = [];
 
   constructor(
     options: Readonly<{
@@ -166,8 +201,8 @@ export class ExperienceBuilder {
     }>,
   ) {
     this.#experience = {
-      version: "0.2",
-      irVersion: 2,
+      version: "0.3",
+      irVersion: 3,
       name: options.name,
       canvas: { width: options.width, height: options.height },
       duration: options.duration,
@@ -181,12 +216,12 @@ export class ExperienceBuilder {
       ...(options.at === undefined ? {} : { at: options.at }),
       duration: options.duration ?? this.#experience.duration,
     });
-    this.#experience.scenes.push(scene.ir);
+    this.#sceneBuilders.push(scene);
     return scene;
   }
 
   build(): ExperienceIR {
-    return this.#experience;
+    return { ...this.#experience, scenes: this.#sceneBuilders.map((scene) => scene.ir) };
   }
 }
 

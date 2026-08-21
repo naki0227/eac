@@ -42,6 +42,8 @@ export type ObjectStyle = TransformStyle &
       blur: Length;
       color: ColorInput;
     }>;
+    /** Defaults to true; set false so a decorative backdrop cannot swallow pointer interaction. */
+    interactive?: boolean;
   }>;
 
 export type ImageStyle = Omit<ObjectStyle, "fill" | "stroke"> &
@@ -100,6 +102,7 @@ export function createObject(
     appearance,
     transformProperties(style),
     nodes.length,
+    style.interactive ?? true,
   );
   nodes.push(object.ir);
   return object;

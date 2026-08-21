@@ -159,6 +159,19 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/runtime:
+    dependencies:
+      '@eac/ir':
+        specifier: workspace:*
+        version: link:../ir
+      '@eac/units':
+        specifier: workspace:*
+        version: link:../units
+    devDependencies:
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/units: {}
 
 packages:

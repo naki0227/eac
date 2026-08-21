@@ -1,0 +1,27 @@
+{
+  "name": "@eac/runtime",
+  "version": "0.3.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@eac/ir": "workspace:*",
+    "@eac/units": "workspace:*"
+  },
+  "devDependencies": {
+    "@eac/core": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run"
+  }
+}
