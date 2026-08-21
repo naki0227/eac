@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "run_id": "a-cycloid-ceef01b7-2c05-4c1a-9716-9c640dace9d9",
+  "raw_result_sha256": "9f330ee1e4e28eac171041686da33c0e824abf5a596bd2e9e78cb2bb85f36f04",
+  "auditor": "ChatGPT (GPT-5.6 Sol)",
+  "audited_at": "2026-08-21T09:34:22.000Z",
+  "metrics": {
+    "hallucinated_api_calls": 0,
+    "invalid_api_values": 0,
+    "repair_iterations": 0,
+    "check_driven_repair_success": false
+  },
+  "evidence_notes": [
+    "Reviewed transcript, final cycloid source, candidate scan, and evaluator output; no undefined or invalid agent-authored API usage and no checked repair.",
+    "Human reviewer approved the audit proposal and judgment notes without changes."
+  ]
+}

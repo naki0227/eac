@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "run_id": "c-broken-experience-repair-189335ff-9082-437d-8602-6916660dd7c6",
+  "raw_result_sha256": "1b2926081e31d1253f07ead288450cf85abbeb4637204d47d1c1aa1a3e50d5eb",
+  "auditor": "ChatGPT (GPT-5.6 Sol)",
+  "audited_at": "2026-08-21T09:34:22.000Z",
+  "metrics": {
+    "hallucinated_api_calls": 0,
+    "invalid_api_values": 0,
+    "repair_iterations": 0,
+    "check_driven_repair_success": true
+  },
+  "evidence_notes": [
+    "The failing initial check was an incomplete preflight on the supplied fixture; its diagnostics caused the later passing first task-complete candidate, so repair iterations is 0 and check-driven repair success is true.",
+    "Human reviewer approved the audit proposal and judgment notes without changes."
+  ]
+}

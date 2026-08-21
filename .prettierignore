@@ -3,3 +3,4 @@ coverage
 frames
 pnpm-lock.yaml
 docs/spec/
+bench/results/r3/artifacts/

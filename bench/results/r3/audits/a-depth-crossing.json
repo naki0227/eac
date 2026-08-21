@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "run_id": "a-depth-crossing-6ab43664-72fc-44aa-a421-52a706a3cec8",
+  "raw_result_sha256": "293c4533512a0be6939ff973ce6f80f76fdb30b12edb5d07cd189afa38d1652c",
+  "auditor": "ChatGPT (GPT-5.6 Sol)",
+  "audited_at": "2026-08-21T09:34:22.000Z",
+  "metrics": {
+    "hallucinated_api_calls": 0,
+    "invalid_api_values": 0,
+    "repair_iterations": 0,
+    "check_driven_repair_success": false
+  },
+  "evidence_notes": [
+    "Reviewed transcript, final depth-transition source, candidate scan, and evaluator output; no undefined or invalid agent-authored API usage and no checked repair.",
+    "Human reviewer approved the audit proposal and judgment notes without changes."
+  ]
+}

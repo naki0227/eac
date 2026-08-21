@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "benchmark_id": "eac-v0.1-main-r3",
+  "freeze_tag": "benchmark-v0.1-main-r3",
+  "freeze_sha": "e4e69417f701e0944f1ae4aa8db1017efb9828c0",
+  "base_commit": "ac440457ea8611da47593b560c6baf8a785a2019",
+  "seed": "eac-v0.1-main-benchmark-2026-08-21",
+  "agent": "codex-cli 0.149.0",
+  "model": "gpt-5.6-sol",
+  "reasoning_config": "medium",
+  "auditor": "ChatGPT (GPT-5.6 Sol)",
+  "audited_at": "2026-08-21T09:34:22.000Z",
+  "run_count": 15,
+  "raw_evidence_disclosure": "private",
+  "published_evidence": [
+    "audited-results",
+    "audits",
+    "final-sources",
+    "run-order",
+    "raw-result-hashes"
+  ],
+  "runs": [
+    {
+      "id": "a-basic-timed-motion",
+      "run_id": "a-basic-timed-motion-4620509c-811b-4e95-a346-e2848bdad98a",
+      "raw_result_sha256": "172770e15241605c56c653e2606c03f4adb2806a5d43fc91e0e8c03b401dbe96",
+      "final_source_sha256": "11d4a8af331a7000f65078962dbc1f9062522663a5c2ddce6b42f5cbbaf54276"
+    },
+    {
+      "id": "a-broken-experience-repair",
+      "run_id": "a-broken-experience-repair-e2a3c55e-23f3-4061-9d6c-34b19b7dcb98",
+      "raw_result_sha256": "443878a2a121f6e402d79913dabbbe13f943a4be28e761d8ac4b494ee967a713",
+      "final_source_sha256": "02be2ca349ccb20d45083c6f43c6b70bd170ae4246039b1a6a076c3f17d1b7ca"
+    },
+    {
+      "id": "a-cycloid",
+      "run_id": "a-cycloid-ceef01b7-2c05-4c1a-9716-9c640dace9d9",
+      "raw_result_sha256": "9f330ee1e4e28eac171041686da33c0e824abf5a596bd2e9e78cb2bb85f36f04",
+      "final_source_sha256": "43b9913148068ff408b7e1b81d2549f8e3b0668396562ceb1cf409d0a3607928"
+    },
+    {
+      "id": "a-depth-crossing",
+      "run_id": "a-depth-crossing-6ab43664-72fc-44aa-a421-52a706a3cec8",
+      "raw_result_sha256": "293c4533512a0be6939ff973ce6f80f76fdb30b12edb5d07cd189afa38d1652c",
+      "final_source_sha256": "d069904d790ecc414c8c8c823a2bd8adbe44d44c2120dff63cf890a4943454b2"
+    },
+    {
+      "id": "a-multi-stage-motion",
+      "run_id": "a-multi-stage-motion-057068e5-3093-4d38-8819-adf5ce84a2db",
+      "raw_result_sha256": "457bdfc3becbc7ead89db382fbad36be89e6fafc5d3dc4865119fbe1be67c2d9",
+      "final_source_sha256": "ae6ca792e5348c83cb5bccd8b554c4b72b816583e9cd734467e6693b81cdee5d"
+    },
+    {
+      "id": "b-basic-timed-motion",
+      "run_id": "b-basic-timed-motion-0832d35d-2a2c-4652-ac0d-01277db13d2d",
+      "raw_result_sha256": "696bfbb459f171594b8198a3847220bda8ffa2c8c920f1b409b408a5fe9424cc",
+      "final_source_sha256": "466ba3a0cffa01b8488ba99d6ad16de09f0e82814c7ac3af3d2de13c9b6870c2"
+    },
+    {
+      "id": "b-broken-experience-repair",
+      "run_id": "b-broken-experience-repair-cc3c6ccf-8682-4a92-93db-9c0f8fc829b1",
+      "raw_result_sha256": "cd9bb906086617e888c98b733fd25bcd5949553dc140c9f870e1fc2bb1da97f0",
+      "final_source_sha256": "754b5653703e954e37879264bfa669fced708218592e156b7bd032c64f34a619"
+    },
+    {
+      "id": "b-cycloid",
+      "run_id": "b-cycloid-429738f5-3e44-4c32-b402-08af444c2b07",
+      "raw_result_sha256": "d9a451899f0ed311b7ba053e089524c0f8649b83ae034cbe01e475af42a82a29",
+      "final_source_sha256": "f8c866cd3537c842f01bcfc62908d430d24960f017d1b5e05cdcba5b47f35f73"
+    },
+    {
+      "id": "b-depth-crossing",
+      "run_id": "b-depth-crossing-4a6773a5-cd7e-4e64-8578-3bff4b7a3e7b",
+      "raw_result_sha256": "080a719566964dfd91866075dd79647ca7c61c32ca1b0dd2da4632016fa30129",
+      "final_source_sha256": "235fa9dd1d8919f58a765149cc85f2e6a78da0a3404f76e42c0ecef73d7f47ba"
+    },
+    {
+      "id": "b-multi-stage-motion",
+      "run_id": "b-multi-stage-motion-7d5d419e-bfa3-4cbd-82d3-ad741c2415ee",
+      "raw_result_sha256": "01bf1f33b6c50e9cd2860391e0e1c30f801b3a1afe42d50a994a30444065908c",
+      "final_source_sha256": "0f600f9718b0c34b76fb8c8600cd6ea6b2f9484161eb5a4c796e840ba047c8df"
+    },
+    {
+      "id": "c-basic-timed-motion",
+      "run_id": "c-basic-timed-motion-00d14bdd-6f29-4809-ad06-937113ee4ee3",
+      "raw_result_sha256": "bd92df862a04284a5dc44d9bd07b7fed6f91d6b327c2e039b33299036f573e55",
+      "final_source_sha256": "00d529fcd1d96745a527cafbaed6f9d0af5e611401c6d8f198c3a021efc44d29"
+    },
+    {
+      "id": "c-broken-experience-repair",
+      "run_id": "c-broken-experience-repair-189335ff-9082-437d-8602-6916660dd7c6",
+      "raw_result_sha256": "1b2926081e31d1253f07ead288450cf85abbeb4637204d47d1c1aa1a3e50d5eb",
+      "final_source_sha256": "1a3aded65a0251f67eab6e657d7b8d12747828efc3678ac34a413c43df6a0bd1"
+    },
+    {
+      "id": "c-cycloid",
+      "run_id": "c-cycloid-0f68616a-5550-47c2-8a67-eb7050d14958",
+      "raw_result_sha256": "4a92eff1f3359989a2b0ac6a6e4127fb2ac11340dead337e3c7b5131a84faa87",
+      "final_source_sha256": "b93a80d5a38b96bfb0f5201216d006e03c324bf587bb1703996a78f165851505"
+    },
+    {
+      "id": "c-depth-crossing",
+      "run_id": "c-depth-crossing-52f35745-9a5b-45c6-96ef-fa734ab84e07",
+      "raw_result_sha256": "03c359c375cc14a2b61a249f5fb17d25febe38baca3a2f59748601f2591d24b4",
+      "final_source_sha256": "14b7d2d49c8f959fb21e2f22dfa499e094c4106df17c83ed5259c9e3a93efd78"
+    },
+    {
+      "id": "c-multi-stage-motion",
+      "run_id": "c-multi-stage-motion-9a6176f6-d1f2-44a6-a330-2974b09c7452",
+      "raw_result_sha256": "8453a740441f07de297a86438b8bd8e5c853e04f2d862473e7d242325106ccff",
+      "final_source_sha256": "b994197abde726c960453a6590ac36ff2bcf6198f295e49afa43a4e5afdad528"
+    }
+  ]
+}
