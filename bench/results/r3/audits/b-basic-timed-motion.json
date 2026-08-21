@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "run_id": "b-basic-timed-motion-0832d35d-2a2c-4652-ac0d-01277db13d2d",
+  "raw_result_sha256": "696bfbb459f171594b8198a3847220bda8ffa2c8c920f1b409b408a5fe9424cc",
+  "auditor": "ChatGPT (GPT-5.6 Sol)",
+  "audited_at": "2026-08-21T09:34:22.000Z",
+  "metrics": {
+    "hallucinated_api_calls": 0,
+    "invalid_api_values": 0,
+    "repair_iterations": 0,
+    "check_driven_repair_success": false
+  },
+  "evidence_notes": [
+    "Reviewed transcript and CLI events; unknown docs topics and unavailable CLI commands were not counted as undefined EaC DSL calls, and no checked repair occurred.",
+    "Human reviewer approved the audit proposal and judgment notes without changes."
+  ]
+}

@@ -12,23 +12,27 @@ import {
   runsRoot,
 } from "./config.js";
 import { buildImages, evaluateInContainer } from "./docker.js";
-import { verifyFreeze, verifySmokeMarker } from "./freeze.js";
+import {
+  verifyAuthPreflightMarker,
+  verifyFreeze,
+  verifyMaterialDiscoveryMarker,
+  verifySmokeMarker,
+} from "./freeze.js";
 import { listJsonFiles, readJson, replaceDirectory, writeJson } from "./fs.js";
 import { assertCompletedPrefix, createRunOrder, type RunPair } from "./order.js";
 import { verifyPrepared, writeTaskMaterial } from "./prepare.js";
 import { sha256, sourceLines, validateResult } from "./result.js";
 import { loadTasks } from "./tasks.js";
 import type { AgentRunner, BenchmarkResult, BenchmarkTask, Condition } from "./types.js";
-
 type RunOptions = Readonly<{
   model: string | null;
   reasoningConfig: string | null;
   timeoutMs: number;
 }>;
-
 async function createRunDirectories(
   runId: string,
   task: BenchmarkTask,
+  condition: Condition,
 ): Promise<{
   runRoot: string;
   workspace: string;
@@ -44,7 +48,7 @@ async function createRunDirectories(
   await cp(resolve(generatedRoot, "public-api"), resolve(materials, "public-api"), {
     recursive: true,
   });
-  await writeTaskMaterial(resolve(materials, "task.txt"), task.prompt);
+  await writeTaskMaterial(resolve(materials, "task.txt"), task.prompt, condition);
   if (task.id === "broken-experience-repair")
     await cp(
       resolve(harnessRoot, "fixtures/broken-experience/eac.config.mjs"),
@@ -64,7 +68,7 @@ async function resultFor(
   runner: AgentRunner,
 ): Promise<BenchmarkResult> {
   const runId = `${condition.toLowerCase()}-${task.id}-${randomUUID()}`;
-  const paths = await createRunDirectories(runId, task);
+  const paths = await createRunDirectories(runId, task, condition);
   const output = await runner.run({
     runId,
     condition,
@@ -96,6 +100,7 @@ async function resultFor(
   await mkdir(artifactDirectory, { recursive: true });
   await writeFile(resolve(artifactDirectory, "agent.jsonl"), output.stdout);
   await writeFile(resolve(artifactDirectory, "agent.stderr.log"), output.stderr);
+  await writeJson(resolve(artifactDirectory, "cli-events.json"), output.cliEvents);
   const publicNamesValue: unknown = JSON.parse(
     await readFile(resolve(generatedRoot, "public-api-names.json"), "utf8"),
   );
@@ -112,7 +117,7 @@ async function resultFor(
   if (evaluation !== null)
     await writeJson(resolve(artifactDirectory, "evaluation.json"), evaluation);
   const notes = [
-    "Hallucinated and invalid API counts remain null until transcript candidates receive human audit.",
+    "Hallucinated API calls, invalid API values, repair iterations, and check-driven repair success remain unaudited in the raw record.",
     "A/B time-to-valid includes evaluator time after the child agent stopped.",
     ...(output.stderr.includes("EAC_PROXY_DENY")
       ? ["The egress proxy denied at least one non-allow-listed destination."]
@@ -145,7 +150,7 @@ async function resultFor(
         ? false
         : output.exitCode === 0 && evaluation.exitCode === 0,
     first_check_pass: checks.length > 0 ? checks[0]?.exitCode === 0 : evaluation?.exitCode === 0,
-    repair_iterations: condition === "C" ? null : 0,
+    repair_iterations: null,
     hallucinated_api_calls: null,
     invalid_api_values: null,
     docs_search_count: output.cliEvents.filter(({ argsCategory }) => argsCategory === "docs-search")
@@ -225,6 +230,8 @@ export async function runOne(
 ): Promise<BenchmarkResult> {
   const commit = await verifyFreeze();
   await verifySmokeMarker(commit);
+  await verifyAuthPreflightMarker(commit);
+  await verifyMaterialDiscoveryMarker(commit, options.model, options.reasoningConfig);
   await verifyPrepared();
   const task = (await loadTasks()).find(({ id }) => id === taskId);
   if (task === undefined) throw new Error(`Unknown benchmark task: ${taskId}`);
@@ -256,6 +263,8 @@ export async function runAll(options: RunOptions): Promise<readonly BenchmarkRes
     throw new Error("run-all requires explicit --model and --reasoning for comparable runs.");
   const commit = await verifyFreeze();
   await verifySmokeMarker(commit);
+  await verifyAuthPreflightMarker(commit);
+  await verifyMaterialDiscoveryMarker(commit, options.model, options.reasoningConfig);
   await verifyPrepared();
   const tasks = await loadTasks();
   const order = await persistedOrder(tasks);

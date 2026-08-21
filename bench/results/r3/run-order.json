@@ -1,0 +1,62 @@
+[
+  {
+    "condition": "C",
+    "taskId": "cycloid"
+  },
+  {
+    "condition": "C",
+    "taskId": "depth-crossing"
+  },
+  {
+    "condition": "B",
+    "taskId": "broken-experience-repair"
+  },
+  {
+    "condition": "A",
+    "taskId": "multi-stage-motion"
+  },
+  {
+    "condition": "A",
+    "taskId": "depth-crossing"
+  },
+  {
+    "condition": "C",
+    "taskId": "multi-stage-motion"
+  },
+  {
+    "condition": "B",
+    "taskId": "multi-stage-motion"
+  },
+  {
+    "condition": "A",
+    "taskId": "basic-timed-motion"
+  },
+  {
+    "condition": "A",
+    "taskId": "broken-experience-repair"
+  },
+  {
+    "condition": "B",
+    "taskId": "cycloid"
+  },
+  {
+    "condition": "A",
+    "taskId": "cycloid"
+  },
+  {
+    "condition": "B",
+    "taskId": "basic-timed-motion"
+  },
+  {
+    "condition": "C",
+    "taskId": "broken-experience-repair"
+  },
+  {
+    "condition": "C",
+    "taskId": "basic-timed-motion"
+  },
+  {
+    "condition": "B",
+    "taskId": "depth-crossing"
+  }
+]

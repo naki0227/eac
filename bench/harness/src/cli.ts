@@ -1,4 +1,7 @@
 import { analyzeResults } from "./analyze.js";
+import { auditRun } from "./audit.js";
+import { runAuthTransportPreflight } from "./preflight.js";
+import { runMaterialDiscoveryPreflight } from "./material-discovery.js";
 import { prepareFixtures } from "./prepare.js";
 import { runAll, runOne } from "./orchestrator.js";
 import { runSmoke } from "./smoke.js";
@@ -30,6 +33,23 @@ async function main(): Promise<void> {
     console.log(`${checks.length} smoke checks passed.`);
     return;
   }
+  if (command === "preflight-auth") {
+    await runAuthTransportPreflight();
+    console.log("✓ Codex ChatGPT auth transport preflight passed.");
+    return;
+  }
+  if (command === "preflight-materials") {
+    const values = options();
+    await runMaterialDiscoveryPreflight(values.model, values.reasoningConfig);
+    console.log("✓ Real Codex material discovery preflight passed.");
+    return;
+  }
+  if (command === "audit") {
+    const runId = args[1];
+    if (runId === undefined) throw new Error("audit requires <run-id>.");
+    console.log(JSON.stringify(await auditRun(runId, args.includes("--apply")), null, 2));
+    return;
+  }
   if (command === "run") {
     const condition = valueAfter("--condition") as Condition | undefined;
     const task = valueAfter("--task");
@@ -44,7 +64,7 @@ async function main(): Promise<void> {
     return;
   }
   if (command === "analyze") {
-    process.stdout.write(await analyzeResults());
+    process.stdout.write(await analyzeResults(args.includes("--audited")));
     return;
   }
   console.log(`EaC benchmark harness
@@ -52,9 +72,12 @@ async function main(): Promise<void> {
 Commands:
   prepare
   smoke
+  preflight-auth
+  preflight-materials --model <id> --reasoning <level>
+  audit <run-id> [--apply]
   run --condition A|B|C --task <task-id> [--model <id>] [--reasoning <level>]
   run-all [--model <id>] [--reasoning <level>]
-  analyze`);
+  analyze [--audited]`);
 }
 
 try {

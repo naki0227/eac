@@ -26,6 +26,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      - run: pnpm bench:verify-public
       - run: pnpm bench:prepare
       - run: git diff --exit-code -- bench/generated
       - run: pnpm bench:smoke

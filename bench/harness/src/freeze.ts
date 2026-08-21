@@ -1,7 +1,14 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { benchmark, repositoryRoot, smokeMarker } from "./config.js";
+import {
+  authPreflightMarker,
+  benchmark,
+  materialDiscoveryMarker,
+  repositoryRoot,
+  smokeMarker,
+} from "./config.js";
 import { requireSuccess } from "./process.js";
+import { sha256 } from "./result.js";
 
 export function assertExpectedCommit(actual: string, expected: string): void {
   if (actual !== expected)
@@ -32,10 +39,93 @@ export async function verifyFreeze(): Promise<string> {
 }
 
 export async function verifySmokeMarker(commit: string): Promise<void> {
-  const parsed = JSON.parse(await readFile(resolve(smokeMarker), "utf8")) as {
-    implementationCommit?: unknown;
-    passed?: unknown;
+  const parsed = await readMarker(smokeMarker, "Smoke checks");
+  assertPassedMarker(parsed, commit, "Smoke checks");
+}
+
+async function readMarker(path: string, label: string): Promise<unknown> {
+  try {
+    return JSON.parse(await readFile(resolve(path), "utf8")) as unknown;
+  } catch {
+    throw new Error(`${label} has not passed for the frozen commit.`);
+  }
+}
+
+export function assertPassedMarker(value: unknown, commit: string, label: string): void {
+  if (typeof value !== "object" || value === null)
+    throw new Error(`${label} has not passed for the frozen commit.`);
+  const marker = value as { implementationCommit?: unknown; passed?: unknown };
+  if (marker.passed !== true || marker.implementationCommit !== commit)
+    throw new Error(`${label} has not passed for the frozen commit.`);
+}
+
+export async function verifyAuthPreflightMarker(commit: string): Promise<void> {
+  assertAuthPreflightMarker(
+    await readMarker(authPreflightMarker, "Auth transport preflight"),
+    commit,
+  );
+}
+
+export function assertAuthPreflightMarker(value: unknown, commit: string): void {
+  assertPassedMarker(value, commit, "Auth transport preflight");
+  const marker = value as {
+    authentication?: unknown;
+    responseSha256?: unknown;
+    exposedMaterials?: unknown;
   };
-  if (parsed.passed !== true || parsed.implementationCommit !== commit)
-    throw new Error("Smoke checks have not passed for the frozen commit.");
+  if (
+    marker.authentication !== "chatgpt" ||
+    marker.responseSha256 !== sha256("BENCH_AUTH_OK") ||
+    !Array.isArray(marker.exposedMaterials) ||
+    marker.exposedMaterials.length !== 1 ||
+    marker.exposedMaterials[0] !== "task.txt"
+  )
+    throw new Error("Auth transport preflight evidence is invalid.");
+}
+
+export async function verifyMaterialDiscoveryMarker(
+  commit: string,
+  model: string | null,
+  reasoningConfig: string | null,
+): Promise<void> {
+  assertMaterialDiscoveryMarker(
+    await readMarker(materialDiscoveryMarker, "Material discovery preflight"),
+    commit,
+    model,
+    reasoningConfig,
+  );
+}
+
+export function assertMaterialDiscoveryMarker(
+  value: unknown,
+  commit: string,
+  model: string | null,
+  reasoningConfig: string | null,
+): void {
+  assertPassedMarker(value, commit, "Material discovery preflight");
+  const marker = value as {
+    authentication?: unknown;
+    model?: unknown;
+    reasoningConfig?: unknown;
+    apiName?: unknown;
+    declarationPath?: unknown;
+    readmeRead?: unknown;
+    declarationRead?: unknown;
+    responseSha256?: unknown;
+    workspaceFiles?: unknown;
+  };
+  if (
+    marker.authentication !== "chatgpt" ||
+    marker.model !== model ||
+    marker.reasoningConfig !== reasoningConfig ||
+    typeof marker.apiName !== "string" ||
+    !/^\/materials\/public-api\/.+\.d\.ts$/.test(String(marker.declarationPath)) ||
+    marker.readmeRead !== true ||
+    marker.declarationRead !== true ||
+    typeof marker.responseSha256 !== "string" ||
+    !/^[0-9a-f]{64}$/.test(marker.responseSha256) ||
+    !Array.isArray(marker.workspaceFiles) ||
+    marker.workspaceFiles.length !== 0
+  )
+    throw new Error("Material discovery preflight evidence is invalid.");
 }

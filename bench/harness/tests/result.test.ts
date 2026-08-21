@@ -15,6 +15,18 @@ describe("result helpers", () => {
     });
   });
 
+  it("counts format diagnostics outside the checker summary", () => {
+    const stdout = [
+      "error[eac::format::required]",
+      "",
+      "warning[eac::layout::aabb-overlap]",
+      "",
+      "0 errors, 1 warnings",
+      "",
+    ].join("\n");
+    expect(parseEvaluation(1, stdout, "")).toMatchObject({ errors: 1, warnings: 1 });
+  });
+
   it("parses only structured CLI telemetry", () => {
     const logs = [
       "noise",

@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "benchmark_id": "eac-v0.1-main-r3",
+  "authority": "human-audited",
+  "freeze_tag": "benchmark-v0.1-main-r3",
+  "freeze_sha": "e4e69417f701e0944f1ae4aa8db1017efb9828c0",
+  "model": "gpt-5.6-sol",
+  "reasoning_config": "medium",
+  "tasks_per_condition": 5,
+  "runs": 15,
+  "by_condition": [
+    {
+      "condition": "A",
+      "task_completion": 4,
+      "completed_runs": 5,
+      "hallucinated_api_calls": 0,
+      "invalid_api_values": 0,
+      "repair_iterations": 0,
+      "check_driven_repair_successes": 0,
+      "docs_searches": 0,
+      "direct_docs_calls": 0,
+      "check_calls": 0,
+      "final_errors": 1,
+      "final_warnings": 5
+    },
+    {
+      "condition": "B",
+      "task_completion": 4,
+      "completed_runs": 5,
+      "hallucinated_api_calls": 0,
+      "invalid_api_values": 0,
+      "repair_iterations": 0,
+      "check_driven_repair_successes": 0,
+      "docs_searches": 5,
+      "direct_docs_calls": 12,
+      "check_calls": 5,
+      "final_errors": 1,
+      "final_warnings": 4
+    },
+    {
+      "condition": "C",
+      "task_completion": 5,
+      "completed_runs": 5,
+      "hallucinated_api_calls": 0,
+      "invalid_api_values": 0,
+      "repair_iterations": 1,
+      "check_driven_repair_successes": 2,
+      "docs_searches": 5,
+      "direct_docs_calls": 10,
+      "check_calls": 7,
+      "final_errors": 0,
+      "final_warnings": 1
+    }
+  ],
+  "caution": "Descriptive results only; n=5 per condition and raw records remain the authoritative private evidence."
+}

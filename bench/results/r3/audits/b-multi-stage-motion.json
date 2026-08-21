@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "run_id": "b-multi-stage-motion-7d5d419e-bfa3-4cbd-82d3-ad741c2415ee",
+  "raw_result_sha256": "01bf1f33b6c50e9cd2860391e0e1c30f801b3a1afe42d50a994a30444065908c",
+  "auditor": "ChatGPT (GPT-5.6 Sol)",
+  "audited_at": "2026-08-21T09:34:22.000Z",
+  "metrics": {
+    "hallucinated_api_calls": 0,
+    "invalid_api_values": 0,
+    "repair_iterations": 0,
+    "check_driven_repair_success": false
+  },
+  "evidence_notes": [
+    "Reviewed transcript and evaluator evidence; the final format failure was not an invalid API value, unavailable CLI commands were not DSL hallucinations, and no checked repair occurred.",
+    "Human reviewer approved the audit proposal and judgment notes without changes."
+  ]
+}

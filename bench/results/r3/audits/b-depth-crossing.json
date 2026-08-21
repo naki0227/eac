@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "run_id": "b-depth-crossing-4a6773a5-cd7e-4e64-8578-3bff4b7a3e7b",
+  "raw_result_sha256": "080a719566964dfd91866075dd79647ca7c61c32ca1b0dd2da4632016fa30129",
+  "auditor": "ChatGPT (GPT-5.6 Sol)",
+  "audited_at": "2026-08-21T09:34:22.000Z",
+  "metrics": {
+    "hallucinated_api_calls": 0,
+    "invalid_api_values": 0,
+    "repair_iterations": 0,
+    "check_driven_repair_success": false
+  },
+  "evidence_notes": [
+    "Reviewed transcript and CLI events; the unknown docs topic was not an undefined EaC DSL call, the final API values were valid, and no checked repair occurred.",
+    "Human reviewer approved the audit proposal and judgment notes without changes."
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "run_id": "b-broken-experience-repair-cc3c6ccf-8682-4a92-93db-9c0f8fc829b1",
+  "raw_result_sha256": "cd9bb906086617e888c98b733fd25bcd5949553dc140c9f870e1fc2bb1da97f0",
+  "auditor": "ChatGPT (GPT-5.6 Sol)",
+  "audited_at": "2026-08-21T09:34:22.000Z",
+  "metrics": {
+    "hallucinated_api_calls": 0,
+    "invalid_api_values": 0,
+    "repair_iterations": 0,
+    "check_driven_repair_success": false
+  },
+  "evidence_notes": [
+    "Reviewed supplied fixture, transcript, and CLI events; fixture defects were not agent-authored, unavailable CLI commands were not DSL hallucinations, and no post-candidate checked edit occurred.",
+    "Human reviewer approved the audit proposal and judgment notes without changes."
+  ]
+}

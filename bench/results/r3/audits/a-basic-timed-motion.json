@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "run_id": "a-basic-timed-motion-4620509c-811b-4e95-a346-e2848bdad98a",
+  "raw_result_sha256": "172770e15241605c56c653e2606c03f4adb2806a5d43fc91e0e8c03b401dbe96",
+  "auditor": "ChatGPT (GPT-5.6 Sol)",
+  "audited_at": "2026-08-21T09:34:22.000Z",
+  "metrics": {
+    "hallucinated_api_calls": 0,
+    "invalid_api_values": 0,
+    "repair_iterations": 0,
+    "check_driven_repair_success": false
+  },
+  "evidence_notes": [
+    "Reviewed transcript, CLI events, undefined API candidates, final source, and evaluation; no undefined or invalid agent-authored API usage and no check-driven candidate repair.",
+    "Human reviewer approved the audit proposal and judgment notes without changes."
+  ]
+}

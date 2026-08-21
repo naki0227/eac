@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "run_id": "c-multi-stage-motion-9a6176f6-d1f2-44a6-a330-2974b09c7452",
+  "raw_result_sha256": "8453a740441f07de297a86438b8bd8e5c853e04f2d862473e7d242325106ccff",
+  "auditor": "ChatGPT (GPT-5.6 Sol)",
+  "audited_at": "2026-08-21T09:34:22.000Z",
+  "metrics": {
+    "hallucinated_api_calls": 0,
+    "invalid_api_values": 0,
+    "repair_iterations": 1,
+    "check_driven_repair_success": true
+  },
+  "evidence_notes": [
+    "The first task-complete candidate failed the format gate; one formatting edit followed by a passing check removed that finding, so repair iterations is 1 and check-driven repair success is true.",
+    "Human reviewer approved the audit proposal and judgment notes without changes."
+  ]
+}
