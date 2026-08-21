@@ -2,6 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, extname, join, resolve } from "node:path";
 import { checkExperience, formatCheckResult } from "@eac/checker";
+import { walkNodes } from "@eac/ir";
 import { encodeMp4, renderPng, renderPngSequence, renderSvg } from "@eac/renderer-svg";
 import * as prettier from "prettier";
 import { guide, help } from "./content.js";
@@ -43,7 +44,7 @@ async function inspect(args: readonly string[]): Promise<number> {
   const experience = await loadProject(project);
   const result = checkExperience(experience);
   console.log(
-    `Experience: ${experience.name}\n\nCanvas:\n${experience.canvas.width.value}x${experience.canvas.height.value}\n\nDuration:\n${experience.duration.value}s\n\nScenes:\n${experience.scenes.map((scene) => `- ${scene.id}`).join("\n")}\n\nObjects:\n${result.stats.objects}\n\nTimed Properties:\n${result.stats.timedProperties}\n\nUnsupported Properties:\n${experience.scenes.reduce((total, scene) => total + scene.objects.reduce((count, object) => count + object.unsupportedProperties.length, 0), 0)}\n\nValidation:\n${result.errors} errors\n${result.warnings} warnings`,
+    `Experience: ${experience.name}\n\nCanvas:\n${experience.canvas.width.value}x${experience.canvas.height.value}\n\nDuration:\n${experience.duration.value}s\n\nScenes:\n${experience.scenes.map((scene) => `- ${scene.id}`).join("\n")}\n\nObjects:\n${result.stats.objects}\n\nTimed Properties:\n${result.stats.timedProperties}\n\nUnsupported Properties:\n${experience.scenes.reduce((total, scene) => total + walkNodes(scene.nodes).reduce((count, { node }) => count + node.unsupportedProperties.length, 0), 0)}\n\nValidation:\n${result.errors} errors\n${result.warnings} warnings`,
   );
   return result.errors === 0 ? 0 : 1;
 }

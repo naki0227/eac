@@ -1,5 +1,6 @@
 import {
   isValidEasing,
+  walkNodes,
   type ExperienceIR,
   type MotionSegment,
   type PropertyName,
@@ -79,16 +80,16 @@ function numericAndUnits(experience: ExperienceIR): Diagnostic[] {
             ["use sec(value) or ms(value)"],
           ),
         );
-    for (const object of scene.objects) {
-      for (const name of Object.keys(object.properties) as PropertyName[]) {
-        const property = object.properties[name] as TimedProperty<PropertyValue>;
+    for (const { node } of walkNodes(scene.nodes)) {
+      for (const name of Object.keys(node.properties) as PropertyName[]) {
+        const property = node.properties[name] as TimedProperty<PropertyValue>;
         const kind = propertyKinds[name];
         if (!validValue(property.initial, kind))
           diagnostics.push(
             error(
               "eac::numeric::invalid",
-              `\`${object.id}.${name}\` has an invalid initial value.`,
-              `${scene.id}.${object.id}.${name}`,
+              `\`${node.id}.${name}\` has an invalid initial value.`,
+              `${scene.id}.${node.id}.${name}`,
               "NaN, Infinity, invalid vectors, and incorrect units cannot be rendered deterministically.",
               ["replace it with a finite value using the documented unit constructor"],
             ),
@@ -104,7 +105,7 @@ function numericAndUnits(experience: ExperienceIR): Diagnostic[] {
               error(
                 "eac::numeric::invalid",
                 `Motion \`${segment.id}\` contains NaN, Infinity, an invalid vector, or an incorrect unit.`,
-                `${scene.id}.${object.id}.${name}`,
+                `${scene.id}.${node.id}.${name}`,
                 "All timed values must be finite and unit-correct to remain seekable.",
                 ["replace invalid values", "use eac docs for the expected units"],
               ),
@@ -114,7 +115,7 @@ function numericAndUnits(experience: ExperienceIR): Diagnostic[] {
               error(
                 "eac::motion::invalid-easing",
                 `Motion \`${segment.id}\` has an invalid easing definition.`,
-                `${scene.id}.${object.id}.${name}`,
+                `${scene.id}.${node.id}.${name}`,
                 "Easing coordinates must be finite and cubic Bézier x coordinates must stay within 0–1.",
                 [
                   "use easing.linear, easeIn, easeOut, or easeInOut",
@@ -130,28 +131,25 @@ function numericAndUnits(experience: ExperienceIR): Diagnostic[] {
                 error(
                   "eac::numeric::invalid-opacity",
                   `Motion \`${segment.id}\` targets opacity outside 0–1.`,
-                  `${scene.id}.${object.id}.opacity`,
+                  `${scene.id}.${node.id}.opacity`,
                   "Opacity outside the normalized range is invalid.",
                   ["use opacity(value) with a value from 0 to 1"],
                 ),
               );
       }
-      if (
-        object.properties.opacity.initial.value < 0 ||
-        object.properties.opacity.initial.value > 1
-      )
+      if (node.properties.opacity.initial.value < 0 || node.properties.opacity.initial.value > 1)
         diagnostics.push(
           error(
             "eac::numeric::invalid-opacity",
-            `\`${object.id}.opacity\` is outside 0–1.`,
-            `${scene.id}.${object.id}.opacity`,
+            `\`${node.id}.opacity\` is outside 0–1.`,
+            `${scene.id}.${node.id}.opacity`,
             "Opacity outside the normalized range is invalid.",
             ["use opacity(value) with a value from 0 to 1"],
           ),
         );
       const scales = [
-        object.properties.scale.initial,
-        ...object.properties.scale.segments.flatMap((segment) => [
+        node.properties.scale.initial,
+        ...node.properties.scale.segments.flatMap((segment) => [
           segment.target,
           ...(segment.from === undefined ? [] : [segment.from]),
         ]),
@@ -160,8 +158,8 @@ function numericAndUnits(experience: ExperienceIR): Diagnostic[] {
         diagnostics.push(
           error(
             "eac::transform::invalid-scale",
-            `\`${object.id}.scale\` contains a non-positive scale.`,
-            `${scene.id}.${object.id}.scale`,
+            `\`${node.id}.scale\` contains a non-positive scale.`,
+            `${scene.id}.${node.id}.scale`,
             "EaC v0.2 requires positive scale components for deterministic non-reflecting transforms.",
             ["use scale values greater than zero"],
           ),
@@ -174,7 +172,8 @@ function numericAndUnits(experience: ExperienceIR): Diagnostic[] {
 function geometry(experience: ExperienceIR): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   for (const scene of experience.scenes)
-    for (const object of scene.objects) {
+    for (const { node: object } of walkNodes(scene.nodes)) {
+      if (object.kind !== "object") continue;
       const geometry = object.geometry;
       const invalid =
         (geometry.kind === "rect" &&

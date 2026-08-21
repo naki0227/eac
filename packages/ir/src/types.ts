@@ -117,21 +117,34 @@ export type PropertyMap = Readonly<{
   depth: TimedProperty<Depth>;
 }>;
 
-export type ObjectIR = Readonly<{
+export type TransformNodeIR = Readonly<{
   id: string;
-  geometry: GeometryIR;
-  appearance: AppearanceIR;
   properties: PropertyMap;
   dependencies: readonly string[];
   unsupportedProperties: readonly UnsupportedProperty[];
   sourceOrder: number;
 }>;
 
+export type ObjectIR = TransformNodeIR &
+  Readonly<{
+    kind: "object";
+    geometry: GeometryIR;
+    appearance: AppearanceIR;
+  }>;
+
+export type GroupIR = TransformNodeIR &
+  Readonly<{
+    kind: "group";
+    children: readonly NodeIR[];
+  }>;
+
+export type NodeIR = ObjectIR | GroupIR;
+
 export type SceneIR = Readonly<{
   id: string;
   start: Time;
   duration: Time;
-  objects: readonly ObjectIR[];
+  nodes: readonly NodeIR[];
 }>;
 
 export type ExperienceIR = Readonly<{

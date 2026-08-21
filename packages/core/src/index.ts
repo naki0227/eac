@@ -1,4 +1,7 @@
 export { experience, ExperienceBuilder, SceneBuilder } from "./builders.js";
+export { GroupBuilder } from "./group-builder.js";
+export { TransformBuilder } from "./transform-builder.js";
+export type { ObjectStyle, TransformStyle } from "./node-factory.js";
 export {
   ObjectBuilder,
   type FollowPathOptions,

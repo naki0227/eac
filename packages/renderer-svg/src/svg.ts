@@ -1,4 +1,10 @@
-import { evaluateTimedProperty, type ExperienceIR, type ObjectIR } from "@eac/ir";
+import {
+  compareSourcePaths,
+  evaluateScene,
+  type EvaluatedObject,
+  type ExperienceIR,
+  type ObjectIR,
+} from "@eac/ir";
 
 const escapeXml = (value: string): string =>
   value
@@ -26,35 +32,38 @@ function geometry(object: ObjectIR): string {
   return `<${shape.closed ? "polygon" : "polyline"} points="${points}" fill="${shape.closed ? fill : "none"}" stroke="${stroke}" stroke-width="${number(shape.strokeWidth.value)}"/>`;
 }
 
-function renderObject(object: ObjectIR, time: number): string {
-  const position = evaluateTimedProperty(object.properties.position, time);
-  const rotation = evaluateTimedProperty(object.properties.rotation, time);
-  const explicitScale = evaluateTimedProperty(object.properties.scale, time);
-  const alpha = evaluateTimedProperty(object.properties.opacity, time);
-  const z = evaluateTimedProperty(object.properties.depth, time);
-  const scale = Math.max(0.1, 1 + z.value / 1_000);
-  return `<g id="${escapeXml(object.id)}" transform="translate(${number(position.x.value)} ${number(position.y.value)}) rotate(${number(rotation.value)}) scale(${number(explicitScale.x * scale)} ${number(explicitScale.y * scale)})" opacity="${number(alpha.value)}">${geometry(object)}</g>`;
+function renderObject(evaluated: EvaluatedObject): string {
+  const { object, matrix, opacity, depth } = evaluated;
+  const depthScale = Math.max(0.1, 1 + depth / 1_000);
+  const transformed = [
+    matrix[0] * depthScale,
+    matrix[1] * depthScale,
+    matrix[2] * depthScale,
+    matrix[3] * depthScale,
+    matrix[4],
+    matrix[5],
+  ];
+  return `<g id="${escapeXml(object.id)}" transform="matrix(${transformed.map(number).join(" ")})" opacity="${number(opacity)}">${geometry(object)}</g>`;
 }
 
 export function renderSvg(experience: ExperienceIR, time: number): string {
   const activeObjects = experience.scenes.flatMap((scene) => {
     if (time < scene.start.value || time > scene.start.value + scene.duration.value) return [];
     const localTime = time - scene.start.value;
-    return scene.objects.map((object) => ({ object, localTime, sceneStart: scene.start.value }));
+    return evaluateScene(scene, localTime).map((evaluated) => ({
+      evaluated,
+      sceneStart: scene.start.value,
+    }));
   });
   activeObjects.sort((a, b) => {
-    const depthDifference =
-      evaluateTimedProperty(a.object.properties.depth, a.localTime).value -
-      evaluateTimedProperty(b.object.properties.depth, b.localTime).value;
+    const depthDifference = a.evaluated.depth - b.evaluated.depth;
     return (
       depthDifference ||
       a.sceneStart - b.sceneStart ||
-      a.object.sourceOrder - b.object.sourceOrder ||
-      a.object.id.localeCompare(b.object.id)
+      compareSourcePaths(a.evaluated.sourcePath, b.evaluated.sourcePath) ||
+      a.evaluated.object.id.localeCompare(b.evaluated.object.id)
     );
   });
-  const body = activeObjects
-    .map(({ object, localTime }) => renderObject(object, localTime))
-    .join("");
+  const body = activeObjects.map(({ evaluated }) => renderObject(evaluated)).join("");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${number(experience.canvas.width.value)}" height="${number(experience.canvas.height.value)}" viewBox="0 0 ${number(experience.canvas.width.value)} ${number(experience.canvas.height.value)}">${body}</svg>`;
 }

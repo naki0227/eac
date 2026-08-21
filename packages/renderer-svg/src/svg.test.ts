@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { depth, experience, px, sec } from "@eac/core";
+import { depth, experience, opacity, px, sec } from "@eac/core";
 import { renderPng, renderSvg } from "./index.js";
 
 describe("SVG renderer", () => {
@@ -53,6 +53,30 @@ describe("SVG renderer", () => {
       scale: { x: 2, y: 0.5 },
     });
 
-    expect(renderSvg(project.build(), 0)).toContain("scale(2 0.5)");
+    expect(renderSvg(project.build(), 0)).toContain('transform="matrix(2 0 0 0.5 50 50)"');
+  });
+
+  it("lowers nested group transforms and opacity to evaluated leaf SVG", () => {
+    const project = experience({
+      name: "group",
+      width: px(100),
+      height: px(100),
+      duration: sec(1),
+    });
+    const group = project.scene("main").group("parent", {
+      position: { x: px(40), y: px(50) },
+      scale: 2,
+      opacity: opacity(0.5),
+    });
+    group.circle("dot", {
+      position: { x: px(10), y: px(0) },
+      radius: px(4),
+      fill: "red",
+      opacity: opacity(0.5),
+    });
+
+    const svg = renderSvg(project.build(), 0);
+    expect(svg).toContain('id="dot" transform="matrix(2 0 0 2 60 50)" opacity="0.25"');
+    expect(svg).not.toContain('id="parent"');
   });
 });

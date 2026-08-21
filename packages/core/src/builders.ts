@@ -1,58 +1,14 @@
-import {
-  defaultProperties,
-  type AppearanceIR,
-  type ExperienceIR,
-  type GeometryIR,
-  type ObjectIR,
-  type Scale2,
-  type SceneIR,
-  type Vec2,
-} from "@eac/ir";
-import {
-  deg,
-  depth,
-  opacity,
-  px,
-  sec,
-  type Angle,
-  type Depth,
-  type Length,
-  type Opacity,
-  type Time,
-} from "@eac/units";
+import { type ExperienceIR, type GeometryIR, type NodeIR, type SceneIR, type Vec2 } from "@eac/ir";
+import { px, sec, type Length, type Time } from "@eac/units";
+import { GroupBuilder } from "./group-builder.js";
+import { createObject, type ObjectStyle, type TransformStyle } from "./node-factory.js";
 import { ObjectBuilder } from "./object-builder.js";
 
-type ObjectStyle = Readonly<{
-  position: Vec2;
-  fill: string;
-  stroke?: string;
-  rotation?: Angle;
-  opacity?: Opacity;
-  depth?: Depth;
-  scale?: number | Readonly<{ x: number; y: number }>;
-}>;
-
-function scaleValue(value: ObjectStyle["scale"]): Scale2 {
-  if (typeof value === "number") return { kind: "scale", x: value, y: value };
-  return { kind: "scale", x: value?.x ?? 1, y: value?.y ?? 1 };
-}
-
-function properties(style: ObjectStyle) {
-  const defaults = defaultProperties(style.position);
-  return {
-    ...defaults,
-    rotation: { ...defaults.rotation, initial: style.rotation ?? deg(0) },
-    scale: { ...defaults.scale, initial: scaleValue(style.scale) },
-    opacity: { ...defaults.opacity, initial: style.opacity ?? opacity(1) },
-    depth: { ...defaults.depth, initial: style.depth ?? depth(0) },
-  };
-}
-
 export class SceneBuilder {
-  readonly #scene: { id: string; start: Time; duration: Time; objects: ObjectIR[] };
+  readonly #scene: { id: string; start: Time; duration: Time; nodes: NodeIR[] };
 
   constructor(id: string, options: Readonly<{ at?: Time; duration: Time }>) {
-    this.#scene = { id, start: options.at ?? sec(0), duration: options.duration, objects: [] };
+    this.#scene = { id, start: options.at ?? sec(0), duration: options.duration, nodes: [] };
   }
 
   get ir(): SceneIR {
@@ -60,19 +16,7 @@ export class SceneBuilder {
   }
 
   #object(id: string, geometry: GeometryIR, style: ObjectStyle): ObjectBuilder {
-    const appearance: AppearanceIR = {
-      fill: style.fill,
-      ...(style.stroke === undefined ? {} : { stroke: style.stroke }),
-    };
-    const object = new ObjectBuilder(
-      id,
-      geometry,
-      appearance,
-      properties(style),
-      this.#scene.objects.length,
-    );
-    this.#scene.objects.push(object.ir);
-    return object;
+    return createObject(this.#scene.nodes, id, geometry, style);
   }
 
   rect(
@@ -124,6 +68,12 @@ export class SceneBuilder {
       },
       options,
     );
+  }
+
+  group(id: string, style: TransformStyle = {}): GroupBuilder {
+    const group = new GroupBuilder(id, style, this.#scene.nodes.length);
+    this.#scene.nodes.push(group.ir);
+    return group;
   }
 }
 

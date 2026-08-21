@@ -22,6 +22,14 @@ export const apiDocs: readonly ApiDoc[] = [
     keywords: ["timeline", "structure", "section"],
   },
   {
+    name: "group",
+    summary: "Creates a transformable parent whose children keep local coordinates.",
+    signature: "scene.group(id, { position?, rotation?, scale?, opacity?, depth? })",
+    example:
+      'const card = scene.group("card", { position: { x: px(200), y: px(300) } }); card.rect("body", { position: { x: px(0), y: px(0) }, ... })',
+    keywords: ["group", "parent", "children", "nested", "transform", "composition"],
+  },
+  {
     name: "rect",
     summary: "Creates a rectangle with a centered position.",
     signature: "scene.rect(id, { position, width, height, fill, ... })",

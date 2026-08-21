@@ -21,6 +21,7 @@ describe("agent-facing CLI", () => {
     ).toEqual(["cycloid", "moveTo"]);
     expect(searchDocs("move along a cycloid")).toEqual(searchDocs("move along a cycloid"));
     expect(searchDocs("follow a spiral path")[0]?.name).toBe("spiral");
+    expect(searchDocs("nested parent transform")[0]?.name).toBe("group");
   });
 
   it("returns an actionable error for an unknown API", async () => {

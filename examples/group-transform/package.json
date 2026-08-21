@@ -1,0 +1,8 @@
+{
+  "name": "@eac/example-group-transform",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@eac/core": "workspace:*"
+  }
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { deg, easing, experience, opacity, px, sec, trajectory } from "@eac/core";
-import type { ExperienceIR } from "@eac/ir";
+import type { ExperienceIR, NodeIR } from "@eac/ir";
 import { checkExperience, formatCheckResult } from "./index.js";
 
 function ids(project: ReturnType<typeof experience>): string[] {
@@ -95,13 +95,13 @@ describe("checker", () => {
         },
       );
     const valid = project.build();
-    const object = valid.scenes[0]?.objects[0];
+    const object = valid.scenes[0]?.nodes[0];
     const malformed = {
       ...valid,
       scenes: [
         {
           ...valid.scenes[0],
-          objects: [
+          nodes: [
             {
               ...object,
               properties: {
@@ -167,20 +167,20 @@ describe("checker", () => {
       .scaleTo(-1, { at: sec(0), duration: sec(1), easing: easing.easeOut });
 
     const valid = project.build();
-    const segment = valid.scenes[0]?.objects[0]?.properties.scale.segments[0];
+    const segment = valid.scenes[0]?.nodes[0]?.properties.scale.segments[0];
     if (!segment) throw new Error("Expected scale segment in test fixture.");
     const malformed = {
       ...valid,
       scenes: [
         {
           ...valid.scenes[0],
-          objects: [
+          nodes: [
             {
-              ...valid.scenes[0]?.objects[0],
+              ...valid.scenes[0]?.nodes[0],
               properties: {
-                ...valid.scenes[0]?.objects[0]?.properties,
+                ...valid.scenes[0]?.nodes[0]?.properties,
                 scale: {
-                  ...valid.scenes[0]?.objects[0]?.properties.scale,
+                  ...valid.scenes[0]?.nodes[0]?.properties.scale,
                   segments: [
                     { ...segment, easing: { kind: "cubic-bezier", x1: -1, y1: 0, x2: 1, y2: 1 } },
                   ],
@@ -211,5 +211,18 @@ describe("checker", () => {
       .rotateTo(deg(180), { at: sec(0), duration: sec(2) });
 
     expect(ids(project).filter((id) => id === "eac::motion::conflicting-writers")).toHaveLength(1);
+  });
+
+  it("rejects cyclic raw group hierarchies without recursing forever", () => {
+    const project = experience({
+      name: "cycle",
+      width: px(100),
+      height: px(100),
+      duration: sec(1),
+    });
+    const group = project.scene("main").group("loop");
+    (group.ir.children as NodeIR[]).push(group.ir);
+
+    expect(ids(project)).toContain("eac::hierarchy::cycle");
   });
 });
