@@ -15,18 +15,19 @@ export type CheckResult = Readonly<{
 
 const preventsHarness = (diagnostic: Diagnostic): boolean =>
   diagnostic.severity === "error" &&
-  [
-    "eac::timeline::invalid-fps",
-    "eac::unit::invalid",
-    "eac::numeric::invalid",
-    "eac::numeric::invalid-opacity",
-    "eac::transform::invalid-scale",
-    "eac::motion::invalid-easing",
-    "eac::geometry::invalid",
-    "eac::color::invalid",
-    "eac::style::invalid",
-    "eac::hierarchy::cycle",
-  ].includes(diagnostic.id);
+  (diagnostic.id.startsWith("eac::asset::") ||
+    [
+      "eac::timeline::invalid-fps",
+      "eac::unit::invalid",
+      "eac::numeric::invalid",
+      "eac::numeric::invalid-opacity",
+      "eac::transform::invalid-scale",
+      "eac::motion::invalid-easing",
+      "eac::geometry::invalid",
+      "eac::color::invalid",
+      "eac::style::invalid",
+      "eac::hierarchy::cycle",
+    ].includes(diagnostic.id));
 
 export function checkExperience(experience: ExperienceIR): CheckResult {
   const staticDiagnostics = runStaticRules(experience);

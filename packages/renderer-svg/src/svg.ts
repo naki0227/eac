@@ -35,6 +35,13 @@ function geometry(evaluated: EvaluatedObject): string {
     return `<circle cx="0" cy="0" r="${number(shape.radius.value)}" fill="${fill}" fill-opacity="${number(appearance.fill.alpha)}" stroke="${stroke}" stroke-opacity="${number(appearance.stroke.alpha)}" stroke-width="${number(appearance.strokeWidth)}"/>`;
   if (shape.kind === "text")
     return `<text x="0" y="0" font-size="${number(shape.fontSize.value)}" font-family="${escapeXml(shape.fontFamily)}" font-weight="${number(shape.fontWeight)}" text-anchor="${shape.textAlign}" letter-spacing="${number(shape.letterSpacing.value)}" fill="${fill}" fill-opacity="${number(appearance.fill.alpha)}" stroke="${stroke}" stroke-opacity="${number(appearance.stroke.alpha)}" stroke-width="${number(appearance.strokeWidth)}">${escapeXml(shape.text)}</text>`;
+  if (shape.kind === "image") {
+    if (shape.asset.kind !== "embedded")
+      throw new TypeError(`Image asset \`${shape.asset.path}\` is not renderable.`);
+    const aspectRatio =
+      shape.fit === "fill" ? "none" : shape.fit === "cover" ? "xMidYMid slice" : "xMidYMid meet";
+    return `<image x="${number(-shape.width.value / 2)}" y="${number(-shape.height.value / 2)}" width="${number(shape.width.value)}" height="${number(shape.height.value)}" preserveAspectRatio="${aspectRatio}" href="data:${shape.asset.mimeType};base64,${shape.asset.data}"/>`;
+  }
   const points = shape.points
     .map((point) => `${number(point.x.value)},${number(point.y.value)}`)
     .join(" ");

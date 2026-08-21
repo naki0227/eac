@@ -1,8 +1,10 @@
 import type { GeometryIR, GroupIR, NodeIR, Vec2 } from "@eac/ir";
 import { px, type Length } from "@eac/units";
 import {
+  createImage,
   createObject,
   transformProperties,
+  type ImageStyle,
   type ObjectStyle,
   type TransformStyle,
 } from "./node-factory.js";
@@ -90,6 +92,10 @@ export class GroupBuilder extends TransformBuilder<GroupIR> {
       },
       options,
     );
+  }
+
+  image(id: string, options: ImageStyle): ObjectBuilder {
+    return createImage(this.#children, id, options);
   }
 
   group(id: string, style: TransformStyle = {}): GroupBuilder {

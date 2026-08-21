@@ -46,7 +46,14 @@ function bounds(evaluated: EvaluatedObject): Box {
                 [left, 0],
               ];
             })()
-          : geometry.points.map((point) => [point.x.value, point.y.value]);
+          : geometry.kind === "image"
+            ? [
+                [-geometry.width.value / 2, -geometry.height.value / 2],
+                [geometry.width.value / 2, -geometry.height.value / 2],
+                [geometry.width.value / 2, geometry.height.value / 2],
+                [-geometry.width.value / 2, geometry.height.value / 2],
+              ]
+            : geometry.points.map((point) => [point.x.value, point.y.value]);
   const points = localPoints.map(([x, y]) => transformPoint(evaluated.matrix, x, y));
   const xs = points.map(([x]) => x);
   const ys = points.map(([, y]) => y);

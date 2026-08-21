@@ -1,3 +1,5 @@
+import { assetDocs } from "./asset-docs.js";
+
 export type ApiDoc = Readonly<{
   name: string;
   summary: string;
@@ -6,7 +8,7 @@ export type ApiDoc = Readonly<{
   keywords: readonly string[];
 }>;
 
-export const apiDocs: readonly ApiDoc[] = [
+const baseApiDocs: readonly ApiDoc[] = [
   {
     name: "experience",
     summary: "Creates an Experience builder with canvas, duration, and FPS.",
@@ -262,6 +264,8 @@ export const apiDocs: readonly ApiDoc[] = [
     keywords: ["front", "forward", "z order", "layer", "depth"],
   },
 ];
+
+export const apiDocs: readonly ApiDoc[] = [...baseApiDocs, ...assetDocs];
 
 const tokenize = (value: string): string[] =>
   (value.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((token) => token.length > 1);

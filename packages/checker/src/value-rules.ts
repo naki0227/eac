@@ -11,6 +11,7 @@ import { isUnit, type UnitKind, type UnitValue } from "@eac/units";
 import { error, type Diagnostic } from "./diagnostic.js";
 import { isValidTrajectory } from "./trajectory-rules.js";
 import { runStyleRules } from "./style-rules.js";
+import { runAssetRules } from "./asset-rules.js";
 
 const propertyKinds: Readonly<Record<PropertyName, UnitKind | "vec2" | "scale">> = {
   position: "vec2",
@@ -196,7 +197,13 @@ function geometry(experience: ExperienceIR): Diagnostic[] {
           (geometry.points.length < 2 ||
             geometry.points.some(
               (point) => !isFiniteUnit(point.x, "length") || !isFiniteUnit(point.y, "length"),
-            )));
+            ))) ||
+        (geometry.kind === "image" &&
+          (!isFiniteUnit(geometry.width, "length") ||
+            !isFiniteUnit(geometry.height, "length") ||
+            geometry.width.value <= 0 ||
+            geometry.height.value <= 0 ||
+            !["contain", "cover", "fill"].includes(geometry.fit)));
       if (invalid)
         diagnostics.push(
           error(
@@ -228,5 +235,10 @@ function geometry(experience: ExperienceIR): Diagnostic[] {
 }
 
 export function runValueRules(experience: ExperienceIR): Diagnostic[] {
-  return [...numericAndUnits(experience), ...geometry(experience), ...runStyleRules(experience)];
+  return [
+    ...numericAndUnits(experience),
+    ...geometry(experience),
+    ...runStyleRules(experience),
+    ...runAssetRules(experience),
+  ];
 }

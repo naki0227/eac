@@ -117,7 +117,31 @@ export type PathGeometry = Readonly<{
   points: readonly Vec2[];
   closed: boolean;
 }>;
-export type GeometryIR = RectGeometry | CircleGeometry | TextGeometry | PathGeometry;
+export type LocalAssetIR = Readonly<{ kind: "local"; path: string }>;
+export type EmbeddedAssetIR = Readonly<{
+  kind: "embedded";
+  path: string;
+  mimeType: "image/png" | "image/jpeg" | "image/svg+xml";
+  data: string;
+  intrinsicWidth: number;
+  intrinsicHeight: number;
+}>;
+export type InvalidAssetIR = Readonly<{
+  kind: "invalid";
+  path: string;
+  reason: "missing" | "unsupported-format" | "invalid-dimensions" | "invalid-reference";
+  detail: string;
+}>;
+export type AssetIR = LocalAssetIR | EmbeddedAssetIR | InvalidAssetIR;
+export type ImageGeometry = Readonly<{
+  kind: "image";
+  asset: AssetIR;
+  width: Length;
+  height: Length;
+  fit: "contain" | "cover" | "fill";
+}>;
+export type GeometryIR =
+  RectGeometry | CircleGeometry | TextGeometry | PathGeometry | ImageGeometry;
 
 export type ShadowIR = Readonly<{
   offsetX: Length;

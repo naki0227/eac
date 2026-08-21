@@ -2,6 +2,7 @@ import {
   defaultProperties,
   type AppearanceIR,
   type GeometryIR,
+  type LocalAssetIR,
   type NodeIR,
   type Scale2,
   type Vec2,
@@ -17,6 +18,7 @@ import {
   type Opacity,
 } from "@eac/units";
 import { normalizeColor, type ColorInput } from "./color.js";
+import { asset } from "./asset.js";
 import { ObjectBuilder } from "./object-builder.js";
 
 export type TransformStyle = Readonly<{
@@ -40,6 +42,14 @@ export type ObjectStyle = TransformStyle &
       blur: Length;
       color: ColorInput;
     }>;
+  }>;
+
+export type ImageStyle = Omit<ObjectStyle, "fill" | "stroke"> &
+  Readonly<{
+    src: string | LocalAssetIR;
+    width: Length;
+    height: Length;
+    fit?: "contain" | "cover" | "fill";
   }>;
 
 function scaleValue(value: TransformStyle["scale"]): Scale2 {
@@ -93,4 +103,19 @@ export function createObject(
   );
   nodes.push(object.ir);
   return object;
+}
+
+export function createImage(nodes: NodeIR[], id: string, style: ImageStyle): ObjectBuilder {
+  return createObject(
+    nodes,
+    id,
+    {
+      kind: "image",
+      asset: typeof style.src === "string" ? asset(style.src) : style.src,
+      width: style.width,
+      height: style.height,
+      fit: style.fit ?? "contain",
+    },
+    { ...style, fill: "transparent" },
+  );
 }

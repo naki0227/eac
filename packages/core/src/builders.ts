@@ -1,7 +1,13 @@
 import { type ExperienceIR, type GeometryIR, type NodeIR, type SceneIR, type Vec2 } from "@eac/ir";
 import { px, sec, type Length, type Time } from "@eac/units";
 import { GroupBuilder } from "./group-builder.js";
-import { createObject, type ObjectStyle, type TransformStyle } from "./node-factory.js";
+import {
+  createImage,
+  createObject,
+  type ImageStyle,
+  type ObjectStyle,
+  type TransformStyle,
+} from "./node-factory.js";
 import { ObjectBuilder } from "./object-builder.js";
 
 export class SceneBuilder {
@@ -79,6 +85,10 @@ export class SceneBuilder {
       },
       options,
     );
+  }
+
+  image(id: string, options: ImageStyle): ObjectBuilder {
+    return createImage(this.#scene.nodes, id, options);
   }
 
   group(id: string, style: TransformStyle = {}): GroupBuilder {

@@ -109,4 +109,36 @@ describe("SVG renderer", () => {
     expect(svg).toContain('font-weight="700" text-anchor="middle" letter-spacing="2"');
     expect(svg).toContain('fill="#336699" fill-opacity="0.8"');
   });
+
+  it("embeds resolved image bytes with deterministic fit lowering", () => {
+    const project = experience({
+      name: "image",
+      width: px(100),
+      height: px(100),
+      duration: sec(1),
+    });
+    const image = project.scene("main").image("photo", {
+      src: "photo.svg",
+      position: { x: px(50), y: px(50) },
+      width: px(80),
+      height: px(60),
+      fit: "cover",
+    });
+    if (image.ir.geometry.kind !== "image") throw new Error("Expected image in test fixture.");
+    const data = Buffer.from('<svg width="2" height="1"></svg>').toString("base64");
+    Object.assign(image.ir.geometry, {
+      asset: {
+        kind: "embedded",
+        path: "photo.svg",
+        mimeType: "image/svg+xml",
+        data,
+        intrinsicWidth: 2,
+        intrinsicHeight: 1,
+      },
+    });
+
+    const svg = renderSvg(project.build(), 0);
+    expect(svg).toContain('preserveAspectRatio="xMidYMid slice"');
+    expect(svg).toContain(`href="data:image/svg+xml;base64,${data}"`);
+  });
 });
