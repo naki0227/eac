@@ -145,7 +145,7 @@ export function parseScenario(value: unknown): ScenarioIR {
   const raw = value as Record<string, unknown>;
   if (raw.version !== "0.3" || raw.scenarioVersion !== 1)
     throw new TypeError(
-      `Expected an EaC v0.3 scenario (scenarioVersion 1), found version ${String(raw.version)}.`,
+      `Expected an EaC v0.3 scenario, found version ${String(raw.version)} scenarioVersion ${String(raw.scenarioVersion)}. Rebuild it with the ScenarioBuilder or re-record it.`,
     );
   const scalar = (input: unknown): number =>
     typeof input === "object" && input !== null && "value" in input
