@@ -9,7 +9,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "tsc -b && node scripts/build-preview-runtime.mjs",
+    "build": "tsc -b && node packages/cli/scripts/build-preview-runtime.mjs",
     "bench:prepare": "pnpm build && node bench/harness/dist/src/cli.js prepare",
     "bench:smoke": "pnpm build && node bench/harness/dist/src/cli.js smoke",
     "bench:preflight-auth": "pnpm build && node bench/harness/dist/src/cli.js preflight-auth",
