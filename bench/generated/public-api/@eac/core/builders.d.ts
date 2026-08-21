@@ -1,13 +1,25 @@
-import { type ExperienceIR, type SceneIR, type Vec2 } from "@eac/ir";
-import { type Angle, type Depth, type Length, type Opacity, type Time } from "@eac/units";
+import {
+  type AudioClipIR,
+  type ExperienceIR,
+  type LocalAssetIR,
+  type SceneIR,
+  type Vec2,
+} from "@eac/ir";
+import { type Length, type Time } from "@eac/units";
+import { GroupBuilder } from "./group-builder.js";
+import { type ImageStyle, type ObjectStyle, type TransformStyle } from "./node-factory.js";
 import { ObjectBuilder } from "./object-builder.js";
-type ObjectStyle = Readonly<{
-  position: Vec2;
-  fill: string;
-  stroke?: string;
-  rotation?: Angle;
-  opacity?: Opacity;
-  depth?: Depth;
+export type AudioOptions = Readonly<{
+  id?: string;
+  at?: Time;
+  duration?: Time;
+  trim?: Readonly<{
+    start?: Time;
+    end?: Time;
+  }>;
+  volume?: number;
+  fadeIn?: Time;
+  fadeOut?: Time;
 }>;
 export declare class SceneBuilder {
   #private;
@@ -42,6 +54,10 @@ export declare class SceneBuilder {
       Readonly<{
         fontSize: Length;
         width?: Length;
+        fontFamily?: string;
+        fontWeight?: number;
+        textAlign?: "start" | "middle" | "end";
+        letterSpacing?: Length;
       }>,
   ): ObjectBuilder;
   path(
@@ -53,6 +69,9 @@ export declare class SceneBuilder {
         strokeWidth?: Length;
       }>,
   ): ObjectBuilder;
+  image(id: string, options: ImageStyle): ObjectBuilder;
+  audio(source: string | LocalAssetIR, options?: AudioOptions): AudioClipIR;
+  group(id: string, style?: TransformStyle): GroupBuilder;
 }
 export declare class ExperienceBuilder {
   #private;
@@ -77,5 +96,4 @@ export declare class ExperienceBuilder {
 export declare const experience: (
   options: ConstructorParameters<typeof ExperienceBuilder>[0],
 ) => ExperienceBuilder;
-export {};
 //# sourceMappingURL=builders.d.ts.map
