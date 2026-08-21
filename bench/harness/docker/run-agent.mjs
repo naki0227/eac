@@ -19,8 +19,6 @@ const args = [
   "--ignore-rules",
   "--strict-config",
   "--json",
-  "--sandbox",
-  "workspace-write",
   "--approve-for-me",
   "--skip-git-repo-check",
   "-C",
