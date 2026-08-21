@@ -23,6 +23,7 @@ describe("agent-facing CLI", () => {
     expect(searchDocs("follow a spiral path")[0]?.name).toBe("spiral");
     expect(searchDocs("nested parent transform")[0]?.name).toBe("group");
     expect(searchDocs("stagger several items")[0]?.name).toBe("stagger");
+    expect(searchDocs("animate sRGB fill")[0]?.name).toBe("color");
   });
 
   it("returns an actionable error for an unknown API", async () => {

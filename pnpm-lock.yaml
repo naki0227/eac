@@ -76,6 +76,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
 
+  examples/styled-title:
+    dependencies:
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   packages/checker:
     dependencies:
       '@eac/ir':

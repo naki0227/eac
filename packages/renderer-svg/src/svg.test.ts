@@ -79,4 +79,34 @@ describe("SVG renderer", () => {
     expect(svg).toContain('id="dot" transform="matrix(2 0 0 2 60 50)" opacity="0.25"');
     expect(svg).not.toContain('id="parent"');
   });
+
+  it("renders normalized color, text attributes, blur, and shadow structurally", () => {
+    const project = experience({
+      name: "style",
+      width: px(200),
+      height: px(100),
+      duration: sec(1),
+    });
+    project.scene("main").text("title", "Styled", {
+      position: { x: px(100), y: px(50) },
+      fontSize: px(24),
+      fontFamily: "Inter & Friends",
+      fontWeight: 700,
+      textAlign: "middle",
+      letterSpacing: px(2),
+      fill: "#336699cc",
+      stroke: "white",
+      strokeWidth: px(2),
+      blur: px(1),
+      shadow: { offsetX: px(3), offsetY: px(4), blur: px(5), color: "#0008" },
+    });
+
+    const svg = renderSvg(project.build(), 0);
+    expect(svg).toContain("<feGaussianBlur");
+    expect(svg).toContain("<feFlood");
+    expect(svg).toContain("<feMerge");
+    expect(svg).toContain('font-family="Inter &amp; Friends"');
+    expect(svg).toContain('font-weight="700" text-anchor="middle" letter-spacing="2"');
+    expect(svg).toContain('fill="#336699" fill-opacity="0.8"');
+  });
 });

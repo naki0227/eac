@@ -1,7 +1,14 @@
 import { deg, depth, lerpUnit, opacity, type UnitValue } from "@eac/units";
 import { applyEasing } from "./easing.js";
 import { evaluateMoveTrajectory, evaluatePathTrajectory, isPathTrajectory } from "./trajectory.js";
-import type { MotionSegment, PropertyValue, Scale2, TimedProperty, Vec2 } from "./types.js";
+import type {
+  ColorIR,
+  MotionSegment,
+  PropertyValue,
+  Scale2,
+  TimedProperty,
+  Vec2,
+} from "./types.js";
 
 function isVec2(value: PropertyValue): value is Vec2 {
   return "x" in value && typeof value.x === "object";
@@ -9,6 +16,9 @@ function isVec2(value: PropertyValue): value is Vec2 {
 
 const isScale = (value: PropertyValue): value is Scale2 =>
   "kind" in value && value.kind === "scale";
+
+const isColor = (value: PropertyValue): value is ColorIR =>
+  "kind" in value && value.kind === "color";
 
 function interpolate<T extends PropertyValue>(
   from: T,
@@ -29,6 +39,14 @@ function interpolate<T extends PropertyValue>(
       kind: "scale",
       x: from.x + (to.x - from.x) * progress,
       y: from.y + (to.y - from.y) * progress,
+    } as T;
+  if (isColor(from) && isColor(to))
+    return {
+      kind: "color",
+      red: from.red + (to.red - from.red) * progress,
+      green: from.green + (to.green - from.green) * progress,
+      blue: from.blue + (to.blue - from.blue) * progress,
+      alpha: from.alpha + (to.alpha - from.alpha) * progress,
     } as T;
   return lerpUnit(from as UnitValue<"angle">, to as UnitValue<"angle">, progress) as T;
 }

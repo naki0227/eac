@@ -1,6 +1,15 @@
-import type { PathTrajectory, PropertyValue, Scale2, TransformNodeIR, Vec2 } from "@eac/ir";
-import { sec, type Angle, type Depth, type Opacity, type Time } from "@eac/units";
+import type {
+  ColorIR,
+  PathTrajectory,
+  PropertyValue,
+  Scale2,
+  TransformNodeIR,
+  Vec2,
+} from "@eac/ir";
+import { sec, type Angle, type Depth, type Length, type Opacity, type Time } from "@eac/units";
+import type { ColorInput } from "./color.js";
 import type { MotionOptions } from "./motion-normalizer.js";
+import type { ObjectBuilder } from "./object-builder.js";
 import {
   TransformBuilder,
   type FollowPathOptions,
@@ -68,6 +77,19 @@ export const motion = Object.freeze({
   },
   depthBy(target: Target, value: Depth, options: Omit<FollowPathOptions, "at">): MotionPlan {
     return atomic(options.duration, (at) => target.depthBy(value, { ...options, at }));
+  },
+  colorTo(target: ObjectBuilder, value: ColorInput, options: PlanOptions<ColorIR>): MotionPlan {
+    return atomic(options.duration, (at) => target.colorTo(value, { ...options, at }));
+  },
+  strokeColorTo(
+    target: ObjectBuilder,
+    value: ColorInput,
+    options: PlanOptions<ColorIR>,
+  ): MotionPlan {
+    return atomic(options.duration, (at) => target.strokeColorTo(value, { ...options, at }));
+  },
+  blurTo(target: ObjectBuilder, value: Length, options: PlanOptions<Length>): MotionPlan {
+    return atomic(options.duration, (at) => target.blurTo(value, { ...options, at }));
   },
 });
 

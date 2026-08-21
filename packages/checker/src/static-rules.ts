@@ -1,4 +1,12 @@
-import { walkNodes, type ExperienceIR, type NodeIR, type PropertyName } from "@eac/ir";
+import {
+  stylePropertyEntries,
+  walkNodes,
+  type ExperienceIR,
+  type NodeIR,
+  type PropertyName,
+  type TimedProperty,
+  type PropertyValue,
+} from "@eac/ir";
 import { error, type Diagnostic } from "./diagnostic.js";
 import { runValueRules } from "./value-rules.js";
 
@@ -40,6 +48,23 @@ function timeline(experience: ExperienceIR): Diagnostic[] {
           }
         }
       }
+      if (node.kind === "object")
+        for (const [name, property] of stylePropertyEntries(node))
+          for (const segment of property.segments)
+            if (
+              segment.start.value < 0 ||
+              segment.duration.value <= 0 ||
+              segment.start.value + segment.duration.value > scene.duration.value
+            )
+              diagnostics.push(
+                error(
+                  "eac::timeline::invalid-range",
+                  `Motion \`${segment.id}\` has an invalid time range.`,
+                  `${scene.id}.${node.id}.${name}: ${segment.start.value}s–${segment.start.value + segment.duration.value}s`,
+                  "Motions must start at or after 0, have positive duration, and fit within their scene.",
+                  ["change the motion's at", "shorten the motion's duration"],
+                ),
+              );
     }
   }
   return diagnostics;
@@ -47,38 +72,46 @@ function timeline(experience: ExperienceIR): Diagnostic[] {
 
 function conflicts(experience: ExperienceIR): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
+  const checkProperty = (
+    sceneId: string,
+    nodeId: string,
+    name: string,
+    property: TimedProperty<PropertyValue>,
+  ): void => {
+    const segments = [...property.segments].sort((a, b) => a.start.value - b.start.value);
+    for (let index = 0; index < segments.length; index++)
+      for (let otherIndex = index + 1; otherIndex < segments.length; otherIndex++) {
+        const first = segments[index];
+        const second = segments[otherIndex];
+        if (!first || !second) continue;
+        const overlapStart = Math.max(first.start.value, second.start.value);
+        const overlapEnd = Math.min(
+          first.start.value + first.duration.value,
+          second.start.value + second.duration.value,
+        );
+        if (overlapStart < overlapEnd)
+          diagnostics.push(
+            error(
+              "eac::motion::conflicting-writers",
+              `\`${nodeId}.${name}\` has multiple writers between ${overlapStart.toFixed(2)}s and ${overlapEnd.toFixed(2)}s.`,
+              `${sceneId}.${nodeId}.${name}`,
+              "EaC v0.2 allows only one writer per property for any point in time.",
+              ["change one motion's at", "shorten one motion's duration"],
+              [
+                `${first.id}  ${first.start.value.toFixed(1)} ━━━ ${first.start.value + first.duration.value}s`,
+                `${second.id}  ${second.start.value.toFixed(1)} ━━━ ${second.start.value + second.duration.value}s`,
+              ],
+            ),
+          );
+      }
+  };
   for (const scene of experience.scenes)
     for (const { node } of walkNodes(scene.nodes)) {
-      for (const name of Object.keys(node.properties) as PropertyName[]) {
-        const segments = [...node.properties[name].segments].sort(
-          (a, b) => a.start.value - b.start.value,
-        );
-        for (let index = 0; index < segments.length; index++)
-          for (let otherIndex = index + 1; otherIndex < segments.length; otherIndex++) {
-            const first = segments[index];
-            const second = segments[otherIndex];
-            if (!first || !second) continue;
-            const overlapStart = Math.max(first.start.value, second.start.value);
-            const overlapEnd = Math.min(
-              first.start.value + first.duration.value,
-              second.start.value + second.duration.value,
-            );
-            if (overlapStart < overlapEnd)
-              diagnostics.push(
-                error(
-                  "eac::motion::conflicting-writers",
-                  `\`${node.id}.${name}\` has multiple writers between ${overlapStart.toFixed(2)}s and ${overlapEnd.toFixed(2)}s.`,
-                  `${scene.id}.${node.id}.${name}`,
-                  "EaC v0.2 allows only one writer per property for any point in time.",
-                  ["change one motion's at", "shorten one motion's duration"],
-                  [
-                    `${first.id}  ${first.start.value.toFixed(1)} ━━━ ${first.start.value + first.duration.value}s`,
-                    `${second.id}  ${second.start.value.toFixed(1)} ━━━ ${second.start.value + second.duration.value}s`,
-                  ],
-                ),
-              );
-          }
-      }
+      for (const name of Object.keys(node.properties) as PropertyName[])
+        checkProperty(scene.id, node.id, name, node.properties[name]);
+      if (node.kind === "object")
+        for (const [name, property] of stylePropertyEntries(node))
+          checkProperty(scene.id, node.id, name, property);
     }
   return diagnostics;
 }

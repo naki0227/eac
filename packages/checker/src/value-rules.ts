@@ -10,6 +10,7 @@ import {
 import { isUnit, type UnitKind, type UnitValue } from "@eac/units";
 import { error, type Diagnostic } from "./diagnostic.js";
 import { isValidTrajectory } from "./trajectory-rules.js";
+import { runStyleRules } from "./style-rules.js";
 
 const propertyKinds: Readonly<Record<PropertyName, UnitKind | "vec2" | "scale">> = {
   position: "vec2",
@@ -182,7 +183,9 @@ function geometry(experience: ExperienceIR): Diagnostic[] {
             !isFiniteUnit(geometry.cornerRadius, "length") ||
             geometry.width.value <= 0 ||
             geometry.height.value <= 0 ||
-            geometry.cornerRadius.value < 0)) ||
+            geometry.cornerRadius.value < 0 ||
+            geometry.cornerRadius.value >
+              Math.min(geometry.width.value, geometry.height.value) / 2)) ||
         (geometry.kind === "circle" &&
           (!isFiniteUnit(geometry.radius, "length") || geometry.radius.value <= 0)) ||
         (geometry.kind === "text" &&
@@ -191,8 +194,6 @@ function geometry(experience: ExperienceIR): Diagnostic[] {
             geometry.fontSize.value <= 0)) ||
         (geometry.kind === "path" &&
           (geometry.points.length < 2 ||
-            !isFiniteUnit(geometry.strokeWidth, "length") ||
-            geometry.strokeWidth.value <= 0 ||
             geometry.points.some(
               (point) => !isFiniteUnit(point.x, "length") || !isFiniteUnit(point.y, "length"),
             )));
@@ -227,5 +228,5 @@ function geometry(experience: ExperienceIR): Diagnostic[] {
 }
 
 export function runValueRules(experience: ExperienceIR): Diagnostic[] {
-  return [...numericAndUnits(experience), ...geometry(experience)];
+  return [...numericAndUnits(experience), ...geometry(experience), ...runStyleRules(experience)];
 }

@@ -239,6 +239,22 @@ export const apiDocs: readonly ApiDoc[] = [
     keywords: ["preset", "fade in", "fade out", "pop in", "rise in", "reusable", "plan"],
   },
   {
+    name: "color",
+    summary:
+      "Creates normalized sRGB colors and animates fill with deterministic channel interpolation.",
+    signature: "rgb(r, g, b) | rgba(r, g, b, a) | hex(value); object.colorTo(color, options)",
+    example: 'card.colorTo(hex("#38bdf8"), { at: sec(1), duration: sec(0.5) })',
+    keywords: ["color", "rgb", "rgba", "hex", "fill", "animate", "srgb"],
+  },
+  {
+    name: "styling",
+    summary: "Configures stroke, corner radius, blur, shadow, and deterministic text attributes.",
+    signature:
+      "{ stroke, strokeWidth, cornerRadius, blur, shadow, fontFamily, fontWeight, textAlign, letterSpacing }",
+    example: "card.blurTo(px(4), { at: sec(1), duration: sec(0.4) })",
+    keywords: ["style", "stroke", "corner", "blur", "shadow", "font", "text"],
+  },
+  {
     name: "bringForward",
     summary: "Semantic depthTo primitive that brings an object forward.",
     signature: "object.bringForward({ at, duration, to })",

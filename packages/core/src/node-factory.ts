@@ -6,7 +6,17 @@ import {
   type Scale2,
   type Vec2,
 } from "@eac/ir";
-import { deg, depth, opacity, px, type Angle, type Depth, type Opacity } from "@eac/units";
+import {
+  deg,
+  depth,
+  opacity,
+  px,
+  type Angle,
+  type Depth,
+  type Length,
+  type Opacity,
+} from "@eac/units";
+import { normalizeColor, type ColorInput } from "./color.js";
 import { ObjectBuilder } from "./object-builder.js";
 
 export type TransformStyle = Readonly<{
@@ -20,8 +30,16 @@ export type TransformStyle = Readonly<{
 export type ObjectStyle = TransformStyle &
   Readonly<{
     position: Vec2;
-    fill: string;
-    stroke?: string;
+    fill: ColorInput;
+    stroke?: ColorInput;
+    strokeWidth?: Length;
+    blur?: Length;
+    shadow?: Readonly<{
+      offsetX: Length;
+      offsetY: Length;
+      blur: Length;
+      color: ColorInput;
+    }>;
   }>;
 
 function scaleValue(value: TransformStyle["scale"]): Scale2 {
@@ -47,8 +65,24 @@ export function createObject(
   style: ObjectStyle,
 ): ObjectBuilder {
   const appearance: AppearanceIR = {
-    fill: style.fill,
-    ...(style.stroke === undefined ? {} : { stroke: style.stroke }),
+    fill: { kind: "timed", initial: normalizeColor(style.fill), segments: [] },
+    stroke: {
+      kind: "timed",
+      initial: normalizeColor(style.stroke ?? "transparent"),
+      segments: [],
+    },
+    blur: { kind: "timed", initial: style.blur ?? px(0), segments: [] },
+    strokeWidth: style.strokeWidth ?? px(1),
+    ...(style.shadow === undefined
+      ? {}
+      : {
+          shadow: {
+            offsetX: style.shadow.offsetX,
+            offsetY: style.shadow.offsetY,
+            blur: style.shadow.blur,
+            color: normalizeColor(style.shadow.color),
+          },
+        }),
   };
   const object = new ObjectBuilder(
     id,

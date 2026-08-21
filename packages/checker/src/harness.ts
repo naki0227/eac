@@ -28,15 +28,24 @@ function bounds(evaluated: EvaluatedObject): Box {
             [-geometry.radius.value, geometry.radius.value],
           ]
         : geometry.kind === "text"
-          ? [
-              [0, -geometry.fontSize.value],
-              [
-                geometry.width?.value ?? geometry.text.length * geometry.fontSize.value * 0.6,
-                -geometry.fontSize.value,
-              ],
-              [geometry.width?.value ?? geometry.text.length * geometry.fontSize.value * 0.6, 0],
-              [0, 0],
-            ]
+          ? (() => {
+              const width =
+                geometry.width?.value ??
+                geometry.text.length * geometry.fontSize.value * 0.6 +
+                  Math.max(0, geometry.text.length - 1) * geometry.letterSpacing.value;
+              const left =
+                geometry.textAlign === "middle"
+                  ? -width / 2
+                  : geometry.textAlign === "end"
+                    ? -width
+                    : 0;
+              return [
+                [left, -geometry.fontSize.value],
+                [left + width, -geometry.fontSize.value],
+                [left + width, 0],
+                [left, 0],
+              ];
+            })()
           : geometry.points.map((point) => [point.x.value, point.y.value]);
   const points = localPoints.map(([x, y]) => transformPoint(evaluated.matrix, x, y));
   const xs = points.map(([x]) => x);
@@ -112,7 +121,8 @@ export function runHarness(experience: ExperienceIR): {
         0,
       ),
       timedProperties: experience.scenes.reduce(
-        (total, scene) => total + walkNodes(scene.nodes).length * 5,
+        (total, scene) =>
+          total + walkNodes(scene.nodes).length * 5 + visualObjects(scene.nodes).length * 3,
         0,
       ),
       invalidTransforms,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { deg, px, sec, type Angle } from "@eac/units";
-import { evaluateTimedProperty, type TimedProperty, type Vec2 } from "./index.js";
+import { evaluateTimedProperty, type ColorIR, type TimedProperty, type Vec2 } from "./index.js";
 
 describe("evaluateTimedProperty", () => {
   it("seeks directly and inherits the previous target", () => {
@@ -67,5 +67,27 @@ describe("evaluateTimedProperty", () => {
     };
     expect(evaluateTimedProperty(property, 2)).toEqual(deg(25));
     expect(evaluateTimedProperty(property, 3)).toEqual(deg(100));
+  });
+
+  it("interpolates normalized sRGB channels deterministically", () => {
+    const property: TimedProperty<ColorIR> = {
+      kind: "timed",
+      initial: { kind: "color", red: 1, green: 0, blue: 0, alpha: 1 },
+      segments: [
+        {
+          id: "color",
+          start: sec(0),
+          duration: sec(2),
+          target: { kind: "color", red: 0, green: 0, blue: 1, alpha: 0.5 },
+        },
+      ],
+    };
+    expect(evaluateTimedProperty(property, 1)).toEqual({
+      kind: "color",
+      red: 0.5,
+      green: 0,
+      blue: 0.5,
+      alpha: 0.75,
+    });
   });
 });

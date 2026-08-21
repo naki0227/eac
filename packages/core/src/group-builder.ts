@@ -53,13 +53,25 @@ export class GroupBuilder extends TransformBuilder<GroupIR> {
   text(
     id: string,
     text: string,
-    options: ObjectStyle & Readonly<{ fontSize: Length; width?: Length }>,
+    options: ObjectStyle &
+      Readonly<{
+        fontSize: Length;
+        width?: Length;
+        fontFamily?: string;
+        fontWeight?: number;
+        textAlign?: "start" | "middle" | "end";
+        letterSpacing?: Length;
+      }>,
   ): ObjectBuilder {
     const geometry: GeometryIR = {
       kind: "text",
       text,
       fontSize: options.fontSize,
       ...(options.width === undefined ? {} : { width: options.width }),
+      fontFamily: options.fontFamily ?? "sans-serif",
+      fontWeight: options.fontWeight ?? 400,
+      textAlign: options.textAlign ?? "start",
+      letterSpacing: options.letterSpacing ?? px(0),
     };
     return this.#object(id, geometry, options);
   }
@@ -75,7 +87,6 @@ export class GroupBuilder extends TransformBuilder<GroupIR> {
         kind: "path",
         points,
         closed: options.closed ?? false,
-        strokeWidth: options.strokeWidth ?? px(1),
       },
       options,
     );

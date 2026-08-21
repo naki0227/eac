@@ -67,7 +67,7 @@ function relativeTarget(
 }
 
 function normalizeProperty<T extends PropertyValue>(
-  name: PropertyName,
+  name: PropertyName | undefined,
   property: TimedProperty<T>,
   operations: readonly MotionOperation<T>[],
 ): TimedProperty<T> {
@@ -77,10 +77,11 @@ function normalizeProperty<T extends PropertyValue>(
   );
   for (const operation of ordered) {
     const current = evaluateTimedProperty({ ...property, segments }, operation.options.at.value);
-    const target =
-      operation.mode === "relative"
-        ? (relativeTarget(name, current, operation.value) as T)
-        : operation.value;
+    let target: T;
+    if (operation.mode === "relative") {
+      if (name === undefined) throw new TypeError("Relative style motion is not supported.");
+      target = relativeTarget(name, current, operation.value) as T;
+    } else target = operation.value;
     segments.push({
       id: operation.id,
       start: operation.options.at,
@@ -92,6 +93,13 @@ function normalizeProperty<T extends PropertyValue>(
     } as MotionSegment<T>);
   }
   return { ...property, segments };
+}
+
+export function normalizeAbsoluteProperty<T extends PropertyValue>(
+  property: TimedProperty<T>,
+  operations: readonly MotionOperation<T>[],
+): TimedProperty<T> {
+  return normalizeProperty(undefined, property, operations);
 }
 
 export function normalizeProperties(

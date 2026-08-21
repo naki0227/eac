@@ -14,9 +14,12 @@ export { trajectory } from "./trajectory.js";
 export { delay, motion, parallel, schedule, sequence, stagger } from "./motion-plan.js";
 export type { MotionPlan } from "./motion-plan.js";
 export { presets } from "./presets.js";
+export { hex, normalizeColor, rgb, rgba } from "./color.js";
+export type { ColorInput } from "./color.js";
 export { deg, depth, ms, opacity, px, rad, sec } from "@eac/units";
 export type {
   Easing,
+  ColorIR,
   ExperienceIR,
   MoveTrajectory,
   PathTrajectory,

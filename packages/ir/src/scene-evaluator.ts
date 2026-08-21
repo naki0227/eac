@@ -1,10 +1,17 @@
 import { evaluateTimedProperty } from "./evaluate.js";
-import type { NodeIR, ObjectIR, SceneIR } from "./types.js";
+import type { ColorIR, NodeIR, ObjectIR, SceneIR, ShadowIR } from "./types.js";
 
 export type Matrix2D = readonly [number, number, number, number, number, number];
 
 export type EvaluatedObject = Readonly<{
   object: ObjectIR;
+  appearance: Readonly<{
+    fill: ColorIR;
+    stroke: ColorIR;
+    strokeWidth: number;
+    blur: number;
+    shadow?: ShadowIR;
+  }>;
   matrix: Matrix2D;
   opacity: number;
   depth: number;
@@ -61,7 +68,20 @@ export function evaluateScene(scene: SceneIR, localTime: number): readonly Evalu
     const opacity = parentOpacity * evaluateTimedProperty(node.properties.opacity, localTime).value;
     const depth = parentDepth + evaluateTimedProperty(node.properties.depth, localTime).value;
     if (node.kind === "object") {
-      leaves.push({ object: node, matrix, opacity, depth, sourcePath });
+      leaves.push({
+        object: node,
+        appearance: {
+          fill: evaluateTimedProperty(node.appearance.fill, localTime),
+          stroke: evaluateTimedProperty(node.appearance.stroke, localTime),
+          strokeWidth: node.appearance.strokeWidth.value,
+          blur: evaluateTimedProperty(node.appearance.blur, localTime).value,
+          ...(node.appearance.shadow === undefined ? {} : { shadow: node.appearance.shadow }),
+        },
+        matrix,
+        opacity,
+        depth,
+        sourcePath,
+      });
       return;
     }
     active.add(node);

@@ -44,6 +44,10 @@ export class TransformBuilder<T extends TransformNodeIR> {
     return this.#node;
   }
 
+  protected replaceNode(values: Partial<T>): void {
+    Object.assign(this.#node, values);
+  }
+
   #addMotion<K extends PropertyName>(
     name: K,
     value: PropertyMap[K]["initial"],

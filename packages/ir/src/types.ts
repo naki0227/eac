@@ -2,8 +2,16 @@ import type { Angle, Depth, Length, Opacity, Time } from "@eac/units";
 
 export type Vec2 = Readonly<{ x: Length; y: Length }>;
 export type Scale2 = Readonly<{ kind: "scale"; x: number; y: number }>;
+export type ColorIR = Readonly<{
+  kind: "color";
+  red: number;
+  green: number;
+  blue: number;
+  alpha: number;
+}>;
 export type PropertyName = "position" | "rotation" | "scale" | "opacity" | "depth";
-export type PropertyValue = Vec2 | Scale2 | Angle | Opacity | Depth;
+export type StylePropertyName = "fill" | "stroke" | "blur";
+export type PropertyValue = Vec2 | Scale2 | ColorIR | Angle | Opacity | Depth | Length;
 
 export type Easing =
   | Readonly<{ kind: "linear" }>
@@ -99,16 +107,34 @@ export type TextGeometry = Readonly<{
   text: string;
   fontSize: Length;
   width?: Length;
+  fontFamily: string;
+  fontWeight: number;
+  textAlign: "start" | "middle" | "end";
+  letterSpacing: Length;
 }>;
 export type PathGeometry = Readonly<{
   kind: "path";
   points: readonly Vec2[];
   closed: boolean;
-  strokeWidth: Length;
 }>;
 export type GeometryIR = RectGeometry | CircleGeometry | TextGeometry | PathGeometry;
 
-export type AppearanceIR = Readonly<{ fill: string; stroke?: string }>;
+export type ShadowIR = Readonly<{
+  offsetX: Length;
+  offsetY: Length;
+  blur: Length;
+  color: ColorIR;
+}>;
+export type StylePropertyMap = Readonly<{
+  fill: TimedProperty<ColorIR>;
+  stroke: TimedProperty<ColorIR>;
+  blur: TimedProperty<Length>;
+}>;
+export type AppearanceIR = StylePropertyMap &
+  Readonly<{
+    strokeWidth: Length;
+    shadow?: ShadowIR;
+  }>;
 export type PropertyMap = Readonly<{
   position: TimedProperty<Vec2>;
   rotation: TimedProperty<Angle>;
