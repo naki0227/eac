@@ -33,4 +33,4 @@ Keep files focused and below 300 lines unless a test matrix or generated data ju
 
 ## Before finishing
 
-Run `pnpm validate` and `pnpm --filter @eac/cli eac check --ci examples/basic-motion/eac.config.mjs`.
+Run `pnpm validate` and `pnpm eac check --ci examples/basic-motion/eac.config.mjs`.

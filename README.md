@@ -30,6 +30,7 @@ Start with `eac help`; do not guess API names. Search by intent:
 ```bash
 pnpm eac docs search "move along a cycloid"
 pnpm eac docs moveTo
+pnpm eac format examples/basic-motion/eac.config.mjs
 ```
 
 ## Small typed DSL

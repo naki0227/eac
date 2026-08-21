@@ -17,3 +17,15 @@ running the full suite. Increase difficulty only with timed APIs; do not add rea
 
 Use [`tasks.json`](tasks.json) as the frozen v0.1 task source. Store run records as JSON under
 `results/` with condition, agent/model, CLI version, commit SHA, timestamps, every metric, and notes.
+The exact metric definitions are frozen in [`metrics.md`](metrics.md).
+
+## v0.1 saturation probe
+
+The authoritative Condition C Task 1 probe completed in 65 seconds with no undefined API calls. Its
+first candidate passed with one approximate AABB warning; the agent used one repair to reach zero
+errors and zero warnings. It also used one docs search and seven direct API-documentation calls.
+
+This is **not saturated** under the predeclared rule because the run required broad documentation
+exploration and a warning-driven repair. Do not expand the timed API before the main five-task
+experiment. The preceding pilot and protocol-validation records are retained because they exposed the
+missing self-contained formatter and an unstructured invalid-trajectory failure.
