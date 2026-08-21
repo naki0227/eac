@@ -1,0 +1,22 @@
+[
+  {
+    "id": "basic-timed-motion",
+    "prompt": "Create multiple objects and combine move, rotate, and fade motions without conflicting writers."
+  },
+  {
+    "id": "cycloid",
+    "prompt": "Move one object along a cycloid trajectory and produce a valid deterministic frame."
+  },
+  {
+    "id": "depth-crossing",
+    "prompt": "Move an object from behind another object to the front using EaC depth semantics."
+  },
+  {
+    "id": "multi-stage-motion",
+    "prompt": "Create sequential motion intervals that rely on current-state inheritance."
+  },
+  {
+    "id": "broken-experience-repair",
+    "prompt": "Repair a supplied project containing overlapping writers, an invalid time range, and an AABB warning by following eac check diagnostics."
+  }
+]

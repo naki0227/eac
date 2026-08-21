@@ -1,0 +1,8 @@
+{
+  "name": "@eac/example-basic-motion",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@eac/core": "workspace:*"
+  }
+}

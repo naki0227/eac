@@ -1,0 +1,8 @@
+{
+  "name": "@eac/example-cycloid-depth",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@eac/core": "workspace:*"
+  }
+}
