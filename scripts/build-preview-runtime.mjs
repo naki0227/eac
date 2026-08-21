@@ -5,45 +5,64 @@
 // lowering path. It deliberately does NOT contain the Node render pipeline (ffmpeg, resvg,
 // workers, filesystem): those live behind @eac/renderer-svg's default entry, and the preview
 // imports @eac/renderer-svg/svg instead.
+//
+// It builds from TypeScript source rather than from `dist`, so `pnpm test` and `pnpm build` can
+// each produce it without depending on the other having run first.
 import { build } from "esbuild";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { stdout } from "node:process";
+import { argv, stdout } from "node:process";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const entry = resolve(root, "packages/cli/dist/preview-runtime/entry.js");
-const output = resolve(root, "packages/cli/dist/preview-runtime/bundle.js");
+const source = (path) => resolve(root, path);
 
-await mkdir(dirname(output), { recursive: true });
-const result = await build({
-  entryPoints: [entry],
-  outfile: output,
-  bundle: true,
-  format: "iife",
-  globalName: "EaCPreviewRuntime",
-  platform: "browser",
-  target: ["es2022"],
-  minify: true,
-  legalComments: "none",
-  logLevel: "warning",
-  metafile: true,
-});
+export const PREVIEW_BUNDLE = resolve(root, "packages/cli/dist/preview-runtime/bundle.js");
 
-const bundled = Object.keys(
-  result.metafile.outputs[Object.keys(result.metafile.outputs)[0]].inputs,
-);
-const forbidden = bundled.filter((file) => /node_modules\/(?!\.)/.test(file));
-const source = await readFile(output, "utf8");
-for (const banned of ["eval(", "new Function", "require(", "node:"]) {
-  if (source.includes(banned)) {
-    throw new Error(`preview runtime bundle must not contain \`${banned}\``);
-  }
+const BANNED = ["eval(", "new Function", "require(", "node:", "child_process", "worker_threads"];
+
+export async function buildPreviewRuntime() {
+  await mkdir(dirname(PREVIEW_BUNDLE), { recursive: true });
+  const result = await build({
+    entryPoints: [source("packages/cli/src/preview-runtime/entry.ts")],
+    outfile: PREVIEW_BUNDLE,
+    bundle: true,
+    format: "iife",
+    globalName: "EaCPreviewRuntime",
+    platform: "browser",
+    target: ["es2022"],
+    minify: true,
+    legalComments: "none",
+    logLevel: "warning",
+    metafile: true,
+    alias: {
+      "@eac/units": source("packages/units/src/index.ts"),
+      "@eac/ir": source("packages/ir/src/index.ts"),
+      "@eac/runtime": source("packages/runtime/src/index.ts"),
+      "@eac/runtime/browser": source("packages/runtime/src/browser.ts"),
+      "@eac/renderer-svg/svg": source("packages/renderer-svg/src/svg.ts"),
+    },
+  });
+
+  const text = await readFile(PREVIEW_BUNDLE, "utf8");
+  for (const banned of BANNED)
+    if (text.includes(banned))
+      throw new Error(`preview runtime bundle must not contain \`${banned}\``);
+  await writeFile(PREVIEW_BUNDLE, text);
+
+  const outputs = result.metafile.outputs;
+  const modules = Object.keys(outputs[Object.keys(outputs)[0]].inputs);
+  const external = modules.filter((file) => file.includes("node_modules"));
+  return { bytes: text.length, modules: modules.length, external };
 }
-await writeFile(output, source);
-stdout.write(
-  `Preview runtime bundled: ${(source.length / 1024).toFixed(1)} KiB from ${bundled.length} modules` +
-    (forbidden.length > 0
-      ? `, external deps: ${forbidden.join(", ")}`
-      : ", no external dependencies"),
-);
+
+if (import.meta.url === `file://${argv[1]}`) {
+  const { bytes, modules, external } = await buildPreviewRuntime();
+  stdout.write(
+    `Preview runtime bundled: ${(bytes / 1024).toFixed(1)} KiB from ${modules} modules` +
+      (external.length > 0
+        ? `, external deps: ${external.join(", ")}`
+        : ", no external dependencies") +
+      "\n",
+  );
+}
