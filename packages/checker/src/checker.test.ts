@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { deg, easing, experience, opacity, px, sec, trajectory } from "@eac/core";
+import {
+  deg,
+  easing,
+  experience,
+  motion,
+  opacity,
+  px,
+  schedule,
+  sec,
+  sequence,
+  trajectory,
+} from "@eac/core";
 import type { ExperienceIR, NodeIR } from "@eac/ir";
 import { checkExperience, formatCheckResult } from "./index.js";
 
@@ -224,5 +235,21 @@ describe("checker", () => {
     (group.ir.children as NodeIR[]).push(group.ir);
 
     expect(ids(project)).toContain("eac::hierarchy::cycle");
+  });
+
+  it("checks plan-lowered writes with the ordinary timeline rules", () => {
+    const project = experience({ name: "plan", width: px(100), height: px(100), duration: sec(1) });
+    const dot = project
+      .scene("main")
+      .circle("dot", { position: { x: px(0), y: px(0) }, radius: px(4), fill: "red" });
+    schedule(
+      sequence(
+        motion.moveTo(dot, { x: px(20), y: px(0) }, { duration: sec(0.75) }),
+        motion.moveTo(dot, { x: px(40), y: px(0) }, { duration: sec(0.75) }),
+      ),
+      { at: sec(0) },
+    );
+
+    expect(ids(project)).toContain("eac::timeline::invalid-range");
   });
 });

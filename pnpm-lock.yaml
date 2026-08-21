@@ -70,6 +70,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
 
+  examples/sequenced-motion:
+    dependencies:
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   packages/checker:
     dependencies:
       '@eac/ir':

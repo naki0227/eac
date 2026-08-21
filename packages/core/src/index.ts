@@ -11,6 +11,9 @@ export {
 export type { MotionOptions, RelativeMotionOptions } from "./motion-normalizer.js";
 export { easing } from "./easing.js";
 export { trajectory } from "./trajectory.js";
+export { delay, motion, parallel, schedule, sequence, stagger } from "./motion-plan.js";
+export type { MotionPlan } from "./motion-plan.js";
+export { presets } from "./presets.js";
 export { deg, depth, ms, opacity, px, rad, sec } from "@eac/units";
 export type {
   Easing,

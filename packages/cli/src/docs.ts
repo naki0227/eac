@@ -188,6 +188,57 @@ export const apiDocs: readonly ApiDoc[] = [
     keywords: ["easing", "timing", "curve", "cubic bezier", "animation"],
   },
   {
+    name: "motion",
+    summary: "Creates an immutable atomic MotionPlan without assigning a runtime start time.",
+    signature: "motion.moveTo(node, target, { duration, easing? }) and matching property helpers",
+    example: "const enter = motion.fadeTo(title, opacity(1), { duration: sec(0.4) })",
+    keywords: ["motion", "plan", "compose", "animation", "atomic"],
+  },
+  {
+    name: "sequence",
+    summary: "Composes MotionPlans with deterministic cumulative offsets.",
+    signature: "sequence(...plans)",
+    example: "schedule(sequence(enter, move, exit), { at: sec(1) })",
+    keywords: ["sequence", "after", "serial", "plan", "timeline", "compose"],
+  },
+  {
+    name: "parallel",
+    summary: "Composes MotionPlans at one shared start and uses the longest duration.",
+    signature: "parallel(...plans)",
+    example: "schedule(parallel(move, fade), { at: sec(1) })",
+    keywords: ["parallel", "together", "simultaneous", "plan", "timeline", "compose"],
+  },
+  {
+    name: "delay",
+    summary: "Creates empty plan time or shifts a MotionPlan by a fixed duration.",
+    signature: "delay(duration, plan?)",
+    example: "sequence(enter, delay(sec(0.5)), exit)",
+    keywords: ["delay", "wait", "pause", "offset", "plan", "timeline"],
+  },
+  {
+    name: "stagger",
+    summary: "Offsets one plan per stable input index by a fixed interval.",
+    signature: "stagger(items, interval, (item, index) => MotionPlan)",
+    example:
+      "schedule(stagger(dots, sec(0.1), (dot) => motion.fadeTo(dot, opacity(1), { duration: sec(0.3) })))",
+    keywords: ["stagger", "cascade", "list", "items", "offset", "plan", "timeline"],
+  },
+  {
+    name: "schedule",
+    summary: "Lowers a MotionPlan at an explicit time into ordinary checked TimedProperty writes.",
+    signature: "schedule(plan, { at? })",
+    example: "schedule(plan, { at: sec(1) })",
+    keywords: ["schedule", "apply", "lower", "plan", "timeline", "start"],
+  },
+  {
+    name: "presets",
+    summary:
+      "Provides small fadeIn, fadeOut, popIn, and riseIn plans built from public primitives.",
+    signature: "presets.fadeIn(node, options) | fadeOut | popIn | riseIn",
+    example: "schedule(presets.popIn(card, { duration: sec(0.4) }), { at: sec(1) })",
+    keywords: ["preset", "fade in", "fade out", "pop in", "rise in", "reusable", "plan"],
+  },
+  {
     name: "bringForward",
     summary: "Semantic depthTo primitive that brings an object forward.",
     signature: "object.bringForward({ at, duration, to })",
