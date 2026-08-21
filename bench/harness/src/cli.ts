@@ -1,6 +1,7 @@
 import { analyzeResults } from "./analyze.js";
 import { auditRun } from "./audit.js";
 import { runAuthTransportPreflight } from "./preflight.js";
+import { runMaterialDiscoveryPreflight } from "./material-discovery.js";
 import { prepareFixtures } from "./prepare.js";
 import { runAll, runOne } from "./orchestrator.js";
 import { runSmoke } from "./smoke.js";
@@ -37,6 +38,12 @@ async function main(): Promise<void> {
     console.log("✓ Codex ChatGPT auth transport preflight passed.");
     return;
   }
+  if (command === "preflight-materials") {
+    const values = options();
+    await runMaterialDiscoveryPreflight(values.model, values.reasoningConfig);
+    console.log("✓ Real Codex material discovery preflight passed.");
+    return;
+  }
   if (command === "audit") {
     const runId = args[1];
     if (runId === undefined) throw new Error("audit requires <run-id>.");
@@ -66,6 +73,7 @@ Commands:
   prepare
   smoke
   preflight-auth
+  preflight-materials --model <id> --reasoning <level>
   audit <run-id> [--apply]
   run --condition A|B|C --task <task-id> [--model <id>] [--reasoning <level>]
   run-all [--model <id>] [--reasoning <level>]

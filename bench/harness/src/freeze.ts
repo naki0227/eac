@@ -1,6 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { authPreflightMarker, benchmark, repositoryRoot, smokeMarker } from "./config.js";
+import {
+  authPreflightMarker,
+  benchmark,
+  materialDiscoveryMarker,
+  repositoryRoot,
+  smokeMarker,
+} from "./config.js";
 import { requireSuccess } from "./process.js";
 import { sha256 } from "./result.js";
 
@@ -75,4 +81,51 @@ export function assertAuthPreflightMarker(value: unknown, commit: string): void 
     marker.exposedMaterials[0] !== "task.txt"
   )
     throw new Error("Auth transport preflight evidence is invalid.");
+}
+
+export async function verifyMaterialDiscoveryMarker(
+  commit: string,
+  model: string | null,
+  reasoningConfig: string | null,
+): Promise<void> {
+  assertMaterialDiscoveryMarker(
+    await readMarker(materialDiscoveryMarker, "Material discovery preflight"),
+    commit,
+    model,
+    reasoningConfig,
+  );
+}
+
+export function assertMaterialDiscoveryMarker(
+  value: unknown,
+  commit: string,
+  model: string | null,
+  reasoningConfig: string | null,
+): void {
+  assertPassedMarker(value, commit, "Material discovery preflight");
+  const marker = value as {
+    authentication?: unknown;
+    model?: unknown;
+    reasoningConfig?: unknown;
+    apiName?: unknown;
+    declarationPath?: unknown;
+    readmeRead?: unknown;
+    declarationRead?: unknown;
+    responseSha256?: unknown;
+    workspaceFiles?: unknown;
+  };
+  if (
+    marker.authentication !== "chatgpt" ||
+    marker.model !== model ||
+    marker.reasoningConfig !== reasoningConfig ||
+    typeof marker.apiName !== "string" ||
+    !/^\/materials\/public-api\/.+\.d\.ts$/.test(String(marker.declarationPath)) ||
+    marker.readmeRead !== true ||
+    marker.declarationRead !== true ||
+    typeof marker.responseSha256 !== "string" ||
+    !/^[0-9a-f]{64}$/.test(marker.responseSha256) ||
+    !Array.isArray(marker.workspaceFiles) ||
+    marker.workspaceFiles.length !== 0
+  )
+    throw new Error("Material discovery preflight evidence is invalid.");
 }

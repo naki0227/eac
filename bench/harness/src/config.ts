@@ -17,10 +17,11 @@ export const auditsRoot = resolve(privateRoot, "audits");
 export const auditedResultsRoot = resolve(privateRoot, "audited-results");
 export const smokeMarker = resolve(privateRoot, "smoke.json");
 export const authPreflightMarker = resolve(privateRoot, "auth-preflight.json");
+export const materialDiscoveryMarker = resolve(privateRoot, "material-discovery.json");
 
 export const benchmark = Object.freeze({
   baseCommit: "ac440457ea8611da47593b560c6baf8a785a2019",
-  freezeTag: "benchmark-v0.1-main",
+  freezeTag: "benchmark-v0.1-main-r2",
   seed: "eac-v0.1-main-benchmark-2026-08-21",
   cliVersion: "0.1.0",
   codexVersion: "0.149.0",

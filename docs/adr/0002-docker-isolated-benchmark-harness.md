@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted for implementation; main benchmark freeze pending.
+Accepted; the first main freeze was protocol-invalid and revision 2 is pending.
 
 ## Context
 
@@ -21,6 +21,11 @@ Metrics that require semantic interpretation use an immutable two-stage record: 
 evidence first, then a hash-bound human audit that produces a separate audited result. The raw record
 is never rewritten. A real-auth transport preflight with no EaC materials is required for the frozen
 commit before benchmark execution.
+
+Allowed README and public declarations remain mounted rather than inlined. A common harness prompt
+identifies their paths so agents can actually discover them without changing the frozen task wording.
+A separate real-agent material-discovery preflight must prove README and declaration reads for the
+exact commit/model/reasoning tuple before any benchmark run.
 
 Real agents use an internal Docker network and a CONNECT proxy restricted to the required OpenAI
 service hosts. The agent runner prefers a narrowly mounted, file-based ChatGPT authentication cache;
@@ -55,6 +60,7 @@ explicit Codex CLI version, while all images carry the frozen repository revisio
 - A malicious Docker host administrator remains outside the threat model.
 - Some transcript-derived metrics still require human audit.
 - The real-auth preflight consumes one minimal Codex turn outside the benchmark task set.
+- The material-discovery preflight consumes a second non-benchmark Codex turn before each freeze.
 
 ## Revisit when
 

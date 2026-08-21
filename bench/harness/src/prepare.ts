@@ -5,6 +5,8 @@ import { pathToFileURL } from "node:url";
 import * as prettier from "prettier";
 import { benchmark, generatedRoot, harnessRoot, repositoryRoot } from "./config.js";
 import { replaceDirectory, writeJson, writeText } from "./fs.js";
+import { buildBenchmarkAgentPrompt } from "./prompt.js";
+import type { Condition } from "./types.js";
 
 const declarationSources = [
   "packages/core/dist/index.d.ts",
@@ -139,6 +141,10 @@ export async function verifyPrepared(): Promise<Manifest> {
   return parsed as Manifest;
 }
 
-export async function writeTaskMaterial(path: string, prompt: string): Promise<void> {
-  await writeText(path, `${prompt.trim()}\n`);
+export async function writeTaskMaterial(
+  path: string,
+  prompt: string,
+  condition: Condition,
+): Promise<void> {
+  await writeText(path, buildBenchmarkAgentPrompt(prompt, condition));
 }

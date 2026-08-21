@@ -59,6 +59,10 @@ Preparation snapshots the allowed README, public `.d.ts` graph, CLI documentatio
 audit list, and broken fixture hashes in `bench/generated/manifest.json`. Generation is deterministic;
 any declaration, documentation, or fixture change requires a new benchmark freeze.
 
+The task wording remains unchanged inside a common harness prompt. That prompt tells every condition
+to inspect `/materials/README.md` and `/materials/public-api/`, but does not inline their contents.
+Only B/C receive a neutral hint that an `eac` command may exist; A receives no CLI suggestion.
+
 The supplied broken fixture is
 `bench/harness/fixtures/broken-experience/eac.config.mjs`. Its test freezes these diagnostics:
 
@@ -91,18 +95,36 @@ not mount or copy the EaC README, declarations, CLI, fixtures, tasks, repository
 requires an exact structured Codex response, no denied proxy destination, and a marker bound to the
 current commit. `run` and `run-all` reject a missing or stale preflight marker.
 
+## Real-agent material discovery preflight
+
+After the final harness commit is clean, verify the exact benchmark model can discover both allowed
+material sources without creating a project:
+
+```bash
+pnpm bench:preflight-materials --model <exact-model-id> --reasoning <level>
+```
+
+This uses a separate Condition-A container and a non-benchmark probe. Success requires completed
+command evidence that the agent read `/materials/README.md` and a real declaration below
+`/materials/public-api/`, an API name actually present in that declaration, an unchanged empty
+workspace, no denied egress, and a host-only marker bound to the commit/model/reasoning tuple. The
+probe transcript is not added to benchmark results.
+
 ## Freeze workflow
 
 After implementation, fixtures, local validation, and CI are final:
 
 ```bash
-git tag -a benchmark-v0.1-main <final-sha> -m "Freeze EaC v0.1 main benchmark"
 pnpm bench:smoke
+pnpm bench:preflight-auth
+pnpm bench:preflight-materials --model <exact-model-id> --reasoning <level>
+git tag -a benchmark-v0.1-main-r2 <final-sha> -m "Freeze EaC v0.1 main benchmark r2"
 ```
 
 `run` and `run-all` refuse a missing tag, a checkout that differs from the tag, a dirty tree, stale
 prepared hashes, a smoke marker from another commit, or a missing/stale real-auth preflight marker.
-The evaluator and agent images carry the same commit in their OCI revision label.
+The material-discovery marker must also match the run's model and reasoning configuration. The
+evaluator and agent images carry the same commit in their OCI revision label.
 
 Benchmark-affecting inputs include README/API declarations, help/guide/docs, checker behavior,
 tasks, metrics, fixtures, generated materials, condition packaging, and the Docker/harness policy.

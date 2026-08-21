@@ -13,6 +13,7 @@
     "bench:prepare": "pnpm build && node bench/harness/dist/src/cli.js prepare",
     "bench:smoke": "pnpm build && node bench/harness/dist/src/cli.js smoke",
     "bench:preflight-auth": "pnpm build && node bench/harness/dist/src/cli.js preflight-auth",
+    "bench:preflight-materials": "pnpm build && node bench/harness/dist/src/cli.js preflight-materials",
     "bench:audit": "pnpm build && node bench/harness/dist/src/cli.js audit",
     "bench:run": "pnpm build && node bench/harness/dist/src/cli.js run",
     "bench:run-all": "pnpm build && node bench/harness/dist/src/cli.js run-all",

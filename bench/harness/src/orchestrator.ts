@@ -12,23 +12,27 @@ import {
   runsRoot,
 } from "./config.js";
 import { buildImages, evaluateInContainer } from "./docker.js";
-import { verifyAuthPreflightMarker, verifyFreeze, verifySmokeMarker } from "./freeze.js";
+import {
+  verifyAuthPreflightMarker,
+  verifyFreeze,
+  verifyMaterialDiscoveryMarker,
+  verifySmokeMarker,
+} from "./freeze.js";
 import { listJsonFiles, readJson, replaceDirectory, writeJson } from "./fs.js";
 import { assertCompletedPrefix, createRunOrder, type RunPair } from "./order.js";
 import { verifyPrepared, writeTaskMaterial } from "./prepare.js";
 import { sha256, sourceLines, validateResult } from "./result.js";
 import { loadTasks } from "./tasks.js";
 import type { AgentRunner, BenchmarkResult, BenchmarkTask, Condition } from "./types.js";
-
 type RunOptions = Readonly<{
   model: string | null;
   reasoningConfig: string | null;
   timeoutMs: number;
 }>;
-
 async function createRunDirectories(
   runId: string,
   task: BenchmarkTask,
+  condition: Condition,
 ): Promise<{
   runRoot: string;
   workspace: string;
@@ -44,7 +48,7 @@ async function createRunDirectories(
   await cp(resolve(generatedRoot, "public-api"), resolve(materials, "public-api"), {
     recursive: true,
   });
-  await writeTaskMaterial(resolve(materials, "task.txt"), task.prompt);
+  await writeTaskMaterial(resolve(materials, "task.txt"), task.prompt, condition);
   if (task.id === "broken-experience-repair")
     await cp(
       resolve(harnessRoot, "fixtures/broken-experience/eac.config.mjs"),
@@ -64,7 +68,7 @@ async function resultFor(
   runner: AgentRunner,
 ): Promise<BenchmarkResult> {
   const runId = `${condition.toLowerCase()}-${task.id}-${randomUUID()}`;
-  const paths = await createRunDirectories(runId, task);
+  const paths = await createRunDirectories(runId, task, condition);
   const output = await runner.run({
     runId,
     condition,
@@ -227,6 +231,7 @@ export async function runOne(
   const commit = await verifyFreeze();
   await verifySmokeMarker(commit);
   await verifyAuthPreflightMarker(commit);
+  await verifyMaterialDiscoveryMarker(commit, options.model, options.reasoningConfig);
   await verifyPrepared();
   const task = (await loadTasks()).find(({ id }) => id === taskId);
   if (task === undefined) throw new Error(`Unknown benchmark task: ${taskId}`);
@@ -259,6 +264,7 @@ export async function runAll(options: RunOptions): Promise<readonly BenchmarkRes
   const commit = await verifyFreeze();
   await verifySmokeMarker(commit);
   await verifyAuthPreflightMarker(commit);
+  await verifyMaterialDiscoveryMarker(commit, options.model, options.reasoningConfig);
   await verifyPrepared();
   const tasks = await loadTasks();
   const order = await persistedOrder(tasks);

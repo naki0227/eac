@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertAuthPreflightMarker,
   assertExpectedCommit,
+  assertMaterialDiscoveryMarker,
   assertPassedMarker,
 } from "../src/freeze.js";
 import { sha256 } from "../src/result.js";
@@ -40,5 +41,27 @@ describe("freeze verification", () => {
     expect(() =>
       assertAuthPreflightMarker({ ...marker, authentication: "api-key" }, "current"),
     ).toThrow("evidence is invalid");
+  });
+
+  it("binds material discovery evidence to commit and model configuration", () => {
+    const marker = {
+      passed: true,
+      implementationCommit: "current",
+      authentication: "chatgpt",
+      model: "gpt-test",
+      reasoningConfig: "medium",
+      apiName: "experience",
+      declarationPath: "/materials/public-api/@eac/core/index.d.ts",
+      readmeRead: true,
+      declarationRead: true,
+      responseSha256: "a".repeat(64),
+      workspaceFiles: [],
+    };
+    expect(() =>
+      assertMaterialDiscoveryMarker(marker, "current", "gpt-test", "medium"),
+    ).not.toThrow();
+    expect(() => assertMaterialDiscoveryMarker(marker, "current", "gpt-test", "high")).toThrow(
+      "evidence is invalid",
+    );
   });
 });
