@@ -33,6 +33,8 @@ pnpm eac docs moveTo
 pnpm eac format examples/basic-motion/eac.config.mjs
 ```
 
+Benchmark isolation and execution are documented in [`bench/harness/README.md`](bench/harness/README.md).
+
 ## Small typed DSL
 
 ```js

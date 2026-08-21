@@ -18,6 +18,7 @@ running the full suite. Increase difficulty only with timed APIs; do not add rea
 Use [`tasks.json`](tasks.json) as the frozen v0.1 task source. Store run records as JSON under
 `results/` with condition, agent/model, CLI version, commit SHA, timestamps, every metric, and notes.
 The exact metric definitions are frozen in [`metrics.md`](metrics.md).
+The main experiment must use the Docker isolation workflow in [`harness/README.md`](harness/README.md).
 
 ## v0.1 saturation probe
 
