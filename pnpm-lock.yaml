@@ -88,6 +88,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
 
+  examples/showcase:
+    dependencies:
+      '@eac/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/styled-title:
     dependencies:
       '@eac/core':

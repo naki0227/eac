@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { runCli, searchDocs } from "./index.js";
+import { loadProject, runCli, searchDocs } from "./index.js";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -59,6 +59,21 @@ describe("agent-facing CLI", () => {
       expect(await runCli(["format", project])).toBe(0);
       expect(await readFile(project, "utf8")).toBe('export default { name: "demo" };\n');
       expect(log).toHaveBeenCalledWith(expect.stringContaining("Formatted"));
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses serialized v0.1 IR instead of reading it as v0.2", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "eac-cli-legacy-"));
+    try {
+      const legacy = join(directory, "eac.json");
+      await writeFile(legacy, JSON.stringify({ version: "0.1", scenes: [] }));
+      await expect(loadProject(legacy)).rejects.toThrow("serialized EaC v0.1 IR");
+
+      const unknown = join(directory, "unknown.json");
+      await writeFile(unknown, JSON.stringify({ scenes: [] }));
+      await expect(loadProject(unknown)).rejects.toThrow("does not contain EaC v0.2 IR");
     } finally {
       await rm(directory, { recursive: true, force: true });
     }

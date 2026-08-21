@@ -6,7 +6,7 @@
 > deterministic, verifiable experiences as code. It is not yet a Remotion, Rive, After Effects,
 > or production UI framework replacement.
 
-**Code is the source. Experience is the output.** EaC v0.1 is a small TypeScript DSL, platform-neutral
+**Code is the source. Experience is the output.** EaC v0.2 is a small TypeScript DSL, platform-neutral
 IR, checker, and deterministic SVG renderer. Its primary research question is whether a coding agent
 can learn an unfamiliar creative DSL from its CLI and converge on valid output through structured
 diagnostics.
@@ -60,8 +60,13 @@ scene
 export default project;
 ```
 
-Motions inherit their starting value at `at`. Overlapping writers for the same property are errors.
-Reactive and simulated properties fail explicitly in v0.1.
+Motions inherit their starting value at `at`, independent of builder call order. Overlapping writers
+for the same property are errors. Reactive and simulated properties fail explicitly in v0.2.
+
+v0.2 adds easing, relative motion, scale, node groups with composed world transforms, deterministic
+trajectories with `followPath`, `sequence`/`parallel`/`delay`/`stagger` composition, typed RGBA color
+and text style, frozen local image assets, and frozen local WAV audio muxed during MP4 render.
+See [`docs/spec/v0.2.md`](docs/spec/v0.2.md).
 
 ## Packages
 
@@ -101,9 +106,11 @@ the CLI plus the check-and-repair loop. Tasks and frozen metrics live in [`bench
 
 ## Status and non-goals
 
-v0.1 supports timed properties, four object primitives, three trajectories, 2.5D depth, approximate
-AABB checks, and SVG/PNG/MP4 output. Interaction, physics, audio, particles, property composition,
-Canvas/WebGPU, native UI export, image rigging, and studio editing are deliberately excluded.
+v0.2 supports timed properties, object primitives, node groups, deterministic trajectories, motion
+composition helpers, typed color and text style, local image assets, timeline audio clips, 2.5D
+depth, approximate AABB checks, and SVG/PNG/MP4 output. Interaction, physics, particles, property
+composition, non-WAV or analyzed audio, Canvas/WebGPU, native UI export, image rigging, and studio
+editing are deliberately excluded.
 
 ## License
 
