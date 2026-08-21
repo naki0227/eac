@@ -15,7 +15,8 @@
   ],
   "dependencies": {
     "@eac/ir": "workspace:*",
-    "@eac/units": "workspace:*"
+    "@eac/units": "workspace:*",
+    "@eac/runtime": "workspace:*"
   },
   "devDependencies": {
     "@eac/core": "workspace:*"

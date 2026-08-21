@@ -5,3 +5,7 @@ export * from "./trajectory.js";
 export * from "./nodes.js";
 export * from "./scene-evaluator.js";
 export * from "./audio.js";
+export * from "./reactive-types.js";
+export * from "./expression.js";
+export * from "./expression-printer.js";
+export * from "./hit-test.js";

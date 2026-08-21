@@ -9,6 +9,8 @@ import { apiDocs, categorizeDocs, categoryForDoc, formatApiDoc, searchDocs } fro
 import { formatInspection, inspectExperience } from "./inspection.js";
 import { findProject, loadProject } from "./project.js";
 import { writePreview } from "./preview.js";
+import { loadScenario, scenarioArgument } from "./scenario-file.js";
+import { ExperienceSession } from "@eac/runtime";
 
 const valueAfter = (args: readonly string[], flag: string): string | undefined => {
   const index = args.indexOf(flag);
@@ -43,11 +45,17 @@ async function init(): Promise<number> {
   return 0;
 }
 
+const optionalScenario = async (args: readonly string[]) => {
+  const path = scenarioArgument(args);
+  return path === undefined ? undefined : await loadScenario(path);
+};
+
 async function inspect(args: readonly string[]): Promise<number> {
   const project = await findProject(projectArgument(args));
   const experience = await loadProject(project);
-  const result = checkExperience(experience);
-  const inspection = inspectExperience(experience, result);
+  const scenario = await optionalScenario(args);
+  const result = checkExperience(experience, scenario);
+  const inspection = inspectExperience(experience, result, scenario);
   console.log(
     args.includes("--json") ? JSON.stringify(inspection, null, 2) : formatInspection(inspection),
   );
@@ -57,12 +65,13 @@ async function inspect(args: readonly string[]): Promise<number> {
 async function check(args: readonly string[]): Promise<number> {
   const project = await findProject(projectArgument(args));
   const experience = await loadProject(project);
+  const scenario = await optionalScenario(args);
   const formatted = await formatIsValid(project);
   if (!formatted)
     console.log(
       `error[eac::format::required]\n\n${project} is not formatted.\n\nWhy:\nConsistent source formatting makes agent edits and reviews deterministic.\n\nPossible fixes:\n- run eac format ${JSON.stringify(project)}\n`,
     );
-  const result = checkExperience(experience);
+  const result = checkExperience(experience, scenario);
   console.log(formatCheckResult(result));
   return result.errors === 0 && formatted ? 0 : 1;
 }
@@ -70,7 +79,7 @@ async function check(args: readonly string[]): Promise<number> {
 async function preview(args: readonly string[]): Promise<number> {
   const project = await findProject(projectArgument(args));
   const output = resolve(valueAfter(args, "--output") ?? "preview.html");
-  await writePreview(await loadProject(project), output);
+  await writePreview(await loadProject(project), output, await optionalScenario(args));
   console.log(`Preview written to ${output}`);
   return 0;
 }
@@ -78,14 +87,20 @@ async function preview(args: readonly string[]): Promise<number> {
 async function render(args: readonly string[]): Promise<number> {
   const project = await findProject(projectArgument(args));
   const experience = await loadProject(project);
+  const scenario = await optionalScenario(args);
   const frame = valueAfter(args, "--frame");
   if (frame !== undefined) {
     const frameNumber = Number.parseInt(frame, 10);
     const output = resolve(valueAfter(args, "--output") ?? `frame-${frameNumber}.png`);
-    await writeFile(output, renderPng(experience, frameNumber / experience.fps));
+    const time = frameNumber / experience.fps;
+    const overrides =
+      scenario === undefined
+        ? undefined
+        : new ExperienceSession(experience, scenario).overridesAt(time);
+    await writeFile(output, renderPng(experience, time, overrides));
     await writeFile(
       output.replace(new RegExp(`${extname(output)}$`), ".svg"),
-      renderSvg(experience, frameNumber / experience.fps),
+      renderSvg(experience, time, overrides),
     );
     console.log(`Frame ${frameNumber} written to ${output}`);
     return 0;
@@ -99,8 +114,11 @@ async function render(args: readonly string[]): Promise<number> {
   const output = resolve(valueAfter(args, "--output") ?? "output.mp4");
   const temporary = await mkdtemp(join(tmpdir(), "eac-render-"));
   try {
-    await renderPngSequence(experience, temporary);
-    await encodeMp4(temporary, experience.fps, output, { experience });
+    await renderPngSequence(experience, temporary, scenario === undefined ? {} : { scenario });
+    await encodeMp4(temporary, experience.fps, output, {
+      experience,
+      ...(scenario === undefined ? {} : { scenario }),
+    });
   } finally {
     await rm(temporary, { recursive: true, force: true });
   }

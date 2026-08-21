@@ -221,6 +221,15 @@ export async function resolveProjectAssets(
         audioClips: await Promise.all(
           scene.audioClips.map((clip) => resolveAudioClip(clip, projectRoot)),
         ),
+        reactive: {
+          ...scene.reactive,
+          sounds: await Promise.all(
+            scene.reactive.sounds.map(async (sound) => ({
+              ...sound,
+              asset: await resolveAudioAsset(sound.asset, projectRoot),
+            })),
+          ),
+        },
       })),
     ),
   };

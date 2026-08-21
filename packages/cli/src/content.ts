@@ -59,6 +59,12 @@ Phase 5 — Validate
 - Read the full diagnostic
 - Fix the cause, not only the symptom
 
+Optional Interaction
+- Declare state with scene.state(name, initial)
+- Bind properties with scene.bind(node, { property: expression })
+- React to events with scene.on(onClick(node), toggle(state))
+- Record or author a scenario, then check, preview, and render it
+
 Optional Audio
 - Use frozen project-relative WAV assets
 - HTML preview is silent; eac render muxes checked audio into MP4

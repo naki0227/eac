@@ -1,0 +1,8 @@
+{
+  "name": "@eac/example-click-toggle",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@eac/core": "workspace:*"
+  }
+}

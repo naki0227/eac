@@ -1,4 +1,6 @@
 import type { CheckResult } from "@eac/checker";
+import { ExperienceSession } from "@eac/runtime";
+import { printExpression, printSignal, expressionSignals, type ScenarioIR } from "@eac/ir";
 import {
   audioClipDuration,
   stylePropertyEntries,
@@ -51,6 +53,29 @@ export type Inspection = Readonly<{
     maxDepth: number;
   }>;
   assets: readonly Readonly<{ node: string; path: string; status: string }>[];
+  signals: readonly string[];
+  states: readonly Readonly<{ scene: string; name: string; valueKind: string; initial: string }>[];
+  bindings: readonly Readonly<{ scene: string; target: string; expression: string }>[];
+  rules: readonly Readonly<{
+    scene: string;
+    id: string;
+    trigger: string;
+    actions: readonly string[];
+    guard?: string;
+  }>[];
+  scenarioReplay?: Readonly<{
+    name: string;
+    steps: number;
+    events: number;
+    transitions: readonly Readonly<{
+      at: number;
+      event: string;
+      target?: string;
+      state: string;
+      from: string;
+      to: string;
+    }>[];
+  }>;
   audioClips: readonly Readonly<{
     id: string;
     scene: string;
@@ -109,7 +134,76 @@ const flatten = (nodes: readonly InspectionNode[]): readonly InspectionNode[] =>
 
 const depthOf = (node: InspectionNode): number => 1 + Math.max(0, ...node.children.map(depthOf));
 
-export function inspectExperience(experience: ExperienceIR, result: CheckResult): Inspection {
+const triggerLabel = (trigger: { kind: string; node?: string; code?: string }): string =>
+  trigger.node !== undefined
+    ? `${trigger.kind}(${trigger.node})`
+    : trigger.code !== undefined
+      ? `${trigger.kind}("${trigger.code}")`
+      : trigger.kind;
+
+const actionLabel = (action: {
+  kind: string;
+  state?: string;
+  sound?: string;
+  value?: Parameters<typeof printExpression>[0];
+}): string => {
+  if (action.kind === "toggleState") return `toggle(${String(action.state)})`;
+  if (action.kind === "playSound") return `playSound(${String(action.sound)})`;
+  return `set(${String(action.state)}, ${action.value === undefined ? "?" : printExpression(action.value)})`;
+};
+
+function inspectReactive(experience: ExperienceIR) {
+  const signals = new Set<string>();
+  const states: Inspection["states"][number][] = [];
+  const bindings: Inspection["bindings"][number][] = [];
+  const rules: Inspection["rules"][number][] = [];
+  for (const scene of experience.scenes) {
+    for (const state of scene.reactive.states)
+      states.push({
+        scene: scene.id,
+        name: state.name,
+        valueKind: state.valueKind,
+        initial: String(state.initial),
+      });
+    for (const binding of scene.reactive.bindings) {
+      const parts =
+        "value" in binding
+          ? [{ label: binding.property, expression: binding.value }]
+          : "progress" in binding
+            ? [{ label: `${binding.property}.progress`, expression: binding.progress }]
+            : [
+                { label: `${binding.property}.x`, expression: binding.x },
+                { label: `${binding.property}.y`, expression: binding.y },
+              ];
+      for (const part of parts) {
+        for (const ref of expressionSignals(part.expression)) signals.add(printSignal(ref));
+        bindings.push({
+          scene: scene.id,
+          target: `${binding.node}.${part.label}`,
+          expression: printExpression(part.expression),
+        });
+      }
+    }
+    for (const rule of scene.reactive.rules) {
+      if (rule.guard !== undefined)
+        for (const ref of expressionSignals(rule.guard)) signals.add(printSignal(ref));
+      rules.push({
+        scene: scene.id,
+        id: rule.id,
+        trigger: triggerLabel(rule.trigger),
+        actions: rule.actions.map(actionLabel),
+        ...(rule.guard === undefined ? {} : { guard: printExpression(rule.guard) }),
+      });
+    }
+  }
+  return { signals: [...signals].sort(), states, bindings, rules };
+}
+
+export function inspectExperience(
+  experience: ExperienceIR,
+  result: CheckResult,
+  scenario?: ScenarioIR,
+): Inspection {
   const scenes = experience.scenes.map((scene) => ({
     id: scene.id,
     start: scene.start.value,
@@ -144,6 +238,27 @@ export function inspectExperience(experience: ExperienceIR, result: CheckResult)
       status: clip.asset.kind,
     })),
   );
+  const reactive = inspectReactive(experience);
+  const replay =
+    scenario === undefined
+      ? undefined
+      : (() => {
+          const session = new ExperienceSession(experience, scenario);
+          const final = session.replayTo(scenario.duration.value);
+          return {
+            name: scenario.name,
+            steps: session.steps.length,
+            events: final.events.length,
+            transitions: final.transitions.map((item) => ({
+              at: item.at,
+              event: item.event,
+              ...(item.target === undefined ? {} : { target: item.target }),
+              state: item.state,
+              from: String(item.from),
+              to: String(item.to),
+            })),
+          };
+        })();
   return {
     version: experience.version,
     irVersion: experience.irVersion,
@@ -168,6 +283,8 @@ export function inspectExperience(experience: ExperienceIR, result: CheckResult)
       maxDepth: Math.max(0, ...scenes.flatMap((scene) => scene.nodes.map(depthOf))),
     },
     assets: [...imageAssets, ...audioAssets],
+    ...reactive,
+    ...(replay === undefined ? {} : { scenarioReplay: replay }),
     audioClips,
     validation: { errors: result.errors, warnings: result.warnings },
   };
@@ -232,5 +349,27 @@ export function formatInspection(inspection: Inspection): string {
     (clip) =>
       `${clip.scene}.audio.${clip.id}\n  ${clip.start.toFixed(3)}s..${clip.end?.toFixed(3) ?? "?"}s volume=${clip.volume} trim=${clip.trimStart.toFixed(3)}s..${clip.trimEnd?.toFixed(3) ?? "source-end"} fade=${clip.fadeIn.toFixed(3)}s/${clip.fadeOut.toFixed(3)}s`,
   );
-  return `Experience: ${inspection.name}\nVersion: ${inspection.version} (IR ${inspection.irVersion})\nCanvas: ${inspection.canvas.width}x${inspection.canvas.height}\nTimeline: ${inspection.duration}s at ${inspection.fps}fps\n\nSummary:\n${inspection.counts.scenes} scenes\n${inspection.counts.nodes} nodes (${inspection.counts.groups} groups, ${inspection.counts.objects} objects, ${inspection.counts.images} images)\n${inspection.counts.audioClips} audio clips\n${inspection.counts.timedProperties} timed properties\n${inspection.counts.writers} writers\n${inspection.counts.unsupportedProperties} unsupported properties\n${inspection.counts.maxDepth} max tree depth\n\nNode tree:\n${trees.join("\n") || "(empty)"}\n\nWriters:\n${writers.join("\n") || "(none)"}\n\nAudio clips:\n${audio.join("\n") || "(none)"}\n\nAssets:\n${assets.join("\n") || "(none)"}\n\nValidation:\n${inspection.validation.errors} errors\n${inspection.validation.warnings} warnings`;
+  const states = inspection.states.map(
+    (state) => `${state.scene}.${state.name}: ${state.valueKind} = ${state.initial}`,
+  );
+  const bindings = inspection.bindings.map(
+    (binding) => `${binding.target}\n  <- ${binding.expression}`,
+  );
+  const rules = inspection.rules.map(
+    (rule) =>
+      `${rule.trigger}${rule.guard === undefined ? "" : ` [when ${rule.guard}]`}\n  -> ${rule.actions.join(", ")}`,
+  );
+  const replay =
+    inspection.scenarioReplay === undefined
+      ? ""
+      : `\n\nScenario ${inspection.scenarioReplay.name}:\n${inspection.scenarioReplay.steps} replay steps\n${inspection.scenarioReplay.events} semantic events\n\nState transitions:\n${
+          inspection.scenarioReplay.transitions
+            .map(
+              (item) =>
+                `t=${item.at.toFixed(3)} ${item.event}(${item.target ?? "-"})\n  ${item.state} ${item.from} → ${item.to}`,
+            )
+            .join("\n") || "(none)"
+        }`;
+  const reactive = `\n\nSignals:\n${inspection.signals.join("\n") || "(none)"}\n\nState:\n${states.join("\n") || "(none)"}\n\nBindings:\n${bindings.join("\n") || "(none)"}\n\nRules:\n${rules.join("\n") || "(none)"}${replay}`;
+  return `Experience: ${inspection.name}\nVersion: ${inspection.version} (IR ${inspection.irVersion})\nCanvas: ${inspection.canvas.width}x${inspection.canvas.height}\nTimeline: ${inspection.duration}s at ${inspection.fps}fps\n\nSummary:\n${inspection.counts.scenes} scenes\n${inspection.counts.nodes} nodes (${inspection.counts.groups} groups, ${inspection.counts.objects} objects, ${inspection.counts.images} images)\n${inspection.counts.audioClips} audio clips\n${inspection.counts.timedProperties} timed properties\n${inspection.counts.writers} writers\n${inspection.counts.unsupportedProperties} unsupported properties\n${inspection.counts.maxDepth} max tree depth\n\nNode tree:\n${trees.join("\n") || "(empty)"}\n\nWriters:\n${writers.join("\n") || "(none)"}\n\nAudio clips:\n${audio.join("\n") || "(none)"}\n\nAssets:\n${assets.join("\n") || "(none)"}${reactive}\n\nValidation:\n${inspection.validation.errors} errors\n${inspection.validation.warnings} warnings`;
 }

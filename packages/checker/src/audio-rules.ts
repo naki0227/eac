@@ -1,4 +1,5 @@
 import { audioClipDuration, type AudioClipIR, type ExperienceIR } from "@eac/ir";
+import { sec } from "@eac/units";
 import { error, type Diagnostic } from "./diagnostic.js";
 
 const finite = (value: number): boolean => Number.isFinite(value);
@@ -104,22 +105,42 @@ function rangeDiagnostics(sceneId: string, sceneDuration: number, clip: AudioCli
 }
 
 export function runAudioRules(experience: ExperienceIR): Diagnostic[] {
-  return experience.scenes.flatMap((scene) =>
-    scene.audioClips.flatMap((clip) => [
-      ...assetDiagnostics(scene.id, clip),
-      ...(finite(clip.volume) && clip.volume >= 0 && clip.volume <= 1
+  const sounds = experience.scenes.flatMap((scene) =>
+    scene.reactive.sounds.flatMap((sound) => [
+      // An event sound has no start time; only its asset, volume, and trim can be checked here.
+      ...assetDiagnostics(scene.id, { ...sound, start: sec(0) }),
+      ...(Number.isFinite(sound.volume) && sound.volume >= 0 && sound.volume <= 1
         ? []
         : [
             error(
               "eac::audio::invalid-volume",
-              `Audio clip \`${clip.id}\` has invalid volume \`${String(clip.volume)}\`.`,
-              `${scene.id}.audio.${clip.id}.volume`,
+              `Sound \`${sound.id}\` has invalid volume \`${String(sound.volume)}\`.`,
+              `${scene.id}.sound.${sound.id}.volume`,
               "Deterministic clip volume is a finite number from 0 through 1.",
               ["set volume between 0 and 1"],
             ),
           ]),
-      ...trimDiagnostics(scene.id, clip),
-      ...rangeDiagnostics(scene.id, scene.duration.value, clip),
+      ...trimDiagnostics(scene.id, { ...sound, start: sec(0) }),
     ]),
+  );
+  return sounds.concat(
+    experience.scenes.flatMap((scene) =>
+      scene.audioClips.flatMap((clip) => [
+        ...assetDiagnostics(scene.id, clip),
+        ...(finite(clip.volume) && clip.volume >= 0 && clip.volume <= 1
+          ? []
+          : [
+              error(
+                "eac::audio::invalid-volume",
+                `Audio clip \`${clip.id}\` has invalid volume \`${String(clip.volume)}\`.`,
+                `${scene.id}.audio.${clip.id}.volume`,
+                "Deterministic clip volume is a finite number from 0 through 1.",
+                ["set volume between 0 and 1"],
+              ),
+            ]),
+        ...trimDiagnostics(scene.id, clip),
+        ...rangeDiagnostics(scene.id, scene.duration.value, clip),
+      ]),
+    ),
   );
 }

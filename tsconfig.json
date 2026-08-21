@@ -1,12 +1,29 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/units" },
-    { "path": "packages/ir" },
-    { "path": "packages/core" },
-    { "path": "packages/checker" },
-    { "path": "packages/renderer-svg" },
-    { "path": "packages/cli" },
-    { "path": "bench/harness" }
+    {
+      "path": "packages/units"
+    },
+    {
+      "path": "packages/ir"
+    },
+    {
+      "path": "packages/core"
+    },
+    {
+      "path": "packages/runtime"
+    },
+    {
+      "path": "packages/checker"
+    },
+    {
+      "path": "packages/renderer-svg"
+    },
+    {
+      "path": "packages/cli"
+    },
+    {
+      "path": "bench/harness"
+    }
   ]
 }

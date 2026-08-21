@@ -1,4 +1,5 @@
 import type { Angle, Depth, Length, Opacity, Time } from "@eac/units";
+import type { ReactiveSceneIR } from "./reactive-types.js";
 export type Vec2 = Readonly<{
   x: Length;
   y: Length;
@@ -218,6 +219,8 @@ export type ObjectIR = TransformNodeIR &
     kind: "object";
     geometry: GeometryIR;
     appearance: AppearanceIR;
+    /** Decorative nodes opt out so a backdrop cannot swallow every pointer interaction. */
+    interactive: boolean;
   }>;
 export type GroupIR = TransformNodeIR &
   Readonly<{
@@ -231,10 +234,11 @@ export type SceneIR = Readonly<{
   duration: Time;
   nodes: readonly NodeIR[];
   audioClips: readonly AudioClipIR[];
+  reactive: ReactiveSceneIR;
 }>;
 export type ExperienceIR = Readonly<{
-  version: "0.2";
-  irVersion: 2;
+  version: "0.3";
+  irVersion: 3;
   name: string;
   canvas: Readonly<{
     width: Length;

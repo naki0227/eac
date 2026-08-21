@@ -29,6 +29,7 @@ export class ObjectBuilder extends TransformBuilder<ObjectIR> {
     appearance: AppearanceIR,
     properties: PropertyMap,
     sourceOrder: number,
+    interactive = true,
   ) {
     const object: ObjectIR = {
       kind: "object",
@@ -39,6 +40,7 @@ export class ObjectBuilder extends TransformBuilder<ObjectIR> {
       dependencies: [],
       unsupportedProperties: [],
       sourceOrder,
+      interactive,
     };
     super(object);
     this.#baseStyleProperties = appearance;
